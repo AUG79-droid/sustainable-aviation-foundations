@@ -3,8 +3,8 @@ window.FOUNDATIONS_DATA = {
     title: "Sustainable Aviation Foundations",
     ecosystem: "Sustainable Aviation Learning Lab",
     signature: "From knowledge to better decisions",
-    version: "English master · v1.0",
-    reviewed: "19 July 2026",
+    version: "English master · v1.1",
+    reviewed: "20 July 2026",
     duration: "About 60 minutes",
     notice: "Educational and exploratory content. It does not replace official policies, processes, targets or corporate positions."
   },
