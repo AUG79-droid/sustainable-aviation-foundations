@@ -119,10 +119,10 @@
     const started = progress.completed.length > 0 || Object.keys(progress.scenario).length > 0 || Object.keys(progress.check).length > 0;
     app.innerHTML = `
       <section class="hero">
-        <img class="hero-media" src="assets/hero-a350-a400m.jpg" alt="A generated visual concept showing an A350 commercial widebody and an A400M military transport aircraft in a golden-hour hangar while an engineering team works around a digital design table.">
+        <img class="hero-media" src="assets/hero-a400m-eurofighter.jpg" alt="A generated visual concept showing an A400M military transport aircraft and a Eurofighter in a golden-hour hangar while an engineering team works around a digital design table.">
         <div class="hero-inner">
           <div>
-            <div class="eyebrow light">Commercial Aircraft × Defence and Space</div>
+            <div class="eyebrow light">Airbus Defence and Space</div>
             <h1>Six pillars.<br>One connected system.</h1>
             <p class="hero-lead">Build a practical foundation for aviation sustainability — across operations, materials, digital innovation, people, the value chain, climate and nature.</p>
             <div class="hero-actions">

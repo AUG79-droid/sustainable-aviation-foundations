@@ -314,7 +314,7 @@ window.FOUNDATIONS_DATA = {
           text: "Codes and commitments matter when they are translated into specifications, supplier selection, contractual requirements, data requests, corrective actions and capability building.",
           points: [
             "Use requirements that can be understood and evidenced.",
-            "Align commercial, technical, quality and sustainability signals.",
+            "Align programme, technical, quality and sustainability signals.",
             "Support improvement while preserving accountability."
           ]
         },
