@@ -2,15 +2,20 @@
   "use strict";
 
   const DATA = window.FOUNDATIONS_DATA;
-  const STORE_KEY = "sustainable-aviation-foundations-v2";
+  const STORE_KEY = "sustainable-aviation-foundations-v3";
   const app = document.querySelector("#app");
   const toast = document.querySelector("#toast");
-  const byId = Object.fromEntries(DATA.modules.map((module) => [module.id, module]));
+  const modulesById = Object.fromEntries(DATA.modules.map((module) => [module.id, module]));
 
-  const defaultProgress = () => ({
+  const emptyProgress = () => ({
+    lessonVisits: {},
+    visualVisits: [],
+    caseVisits: [],
+    labAnswers: {},
+    labPassed: [],
+    assessmentAnswers: {},
+    assessmentPassed: [],
     completed: [],
-    scenario: {},
-    checks: {},
     notes: {},
     finalAnswers: {},
     finalPassed: false
@@ -18,18 +23,10 @@
 
   function loadProgress() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-      if (!parsed || typeof parsed !== "object") return defaultProgress();
-      return {
-        completed: Array.isArray(parsed.completed) ? parsed.completed.filter((id) => byId[id]) : [],
-        scenario: parsed.scenario && typeof parsed.scenario === "object" ? parsed.scenario : {},
-        checks: parsed.checks && typeof parsed.checks === "object" ? parsed.checks : {},
-        notes: parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {},
-        finalAnswers: parsed.finalAnswers && typeof parsed.finalAnswers === "object" ? parsed.finalAnswers : {},
-        finalPassed: Boolean(parsed.finalPassed)
-      };
+      const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      return raw && typeof raw === "object" ? { ...emptyProgress(), ...raw } : emptyProgress();
     } catch (_error) {
-      return defaultProgress();
+      return emptyProgress();
     }
   }
 
@@ -50,494 +47,413 @@
     })[char]);
   }
 
-  function isComplete(id) {
-    return progress.completed.includes(id);
-  }
-
-  function completionPercent() {
-    return Math.round((progress.completed.length / DATA.modules.length) * 100);
-  }
-
-  function firstIncomplete() {
-    return DATA.modules.find((module) => !isComplete(module.id)) || DATA.modules[0];
-  }
-
-  function nextModule(id) {
-    const index = DATA.modules.findIndex((module) => module.id === id);
-    return index >= 0 ? DATA.modules[index + 1] || null : null;
+  function csvEsc(value) {
+    const text = String(value ?? "");
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   }
 
   function showToast(message) {
     toast.textContent = message;
     toast.classList.add("show");
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2800);
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove("show"), 3000);
+  }
+
+  function moduleIndex(moduleId) {
+    return DATA.modules.findIndex((module) => module.id === moduleId);
+  }
+
+  function visitedLessons(module) {
+    return new Set(progress.lessonVisits[module.id] || []);
+  }
+
+  function isModuleComplete(moduleId) {
+    return progress.completed.includes(moduleId);
+  }
+
+  function syncModuleCompletion(module) {
+    const lessonReady = visitedLessons(module).size === module.lessons.length;
+    const supportingReady = progress.visualVisits.includes(module.id) && progress.caseVisits.includes(module.id);
+    const appliedReady = progress.labPassed.includes(module.id) && progress.assessmentPassed.includes(module.id);
+    const ready = lessonReady && supportingReady && appliedReady;
+    const has = progress.completed.includes(module.id);
+    if (ready && !has) progress.completed.push(module.id);
+    if (!ready && has) progress.completed = progress.completed.filter((id) => id !== module.id);
+    return ready;
+  }
+
+  function moduleTaskState(module) {
+    const lessons = visitedLessons(module).size;
+    const visuals = progress.visualVisits.includes(module.id) ? 1 : 0;
+    const caseFile = progress.caseVisits.includes(module.id) ? 1 : 0;
+    const lab = progress.labPassed.includes(module.id) ? 1 : 0;
+    const assessment = progress.assessmentPassed.includes(module.id) ? 1 : 0;
+    const done = lessons + visuals + caseFile + lab + assessment;
+    const total = module.lessons.length + 4;
+    return { lessons, visuals, caseFile, lab, assessment, done, total, percent: Math.round((done / total) * 100) };
+  }
+
+  function coursePercent() {
+    const done = DATA.modules.reduce((sum, module) => sum + moduleTaskState(module).done, 0);
+    const total = DATA.modules.reduce((sum, module) => sum + moduleTaskState(module).total, 0);
+    return Math.round((done / total) * 100);
   }
 
   function updateHeaderProgress() {
-    const count = progress.completed.length;
-    const percent = completionPercent();
+    const percent = coursePercent();
     const value = document.querySelector("#header-progress-value");
     const label = document.querySelector("#header-progress-label");
     const ring = document.querySelector(".progress-ring");
-    if (value) value.textContent = count;
-    if (label) label.textContent = `${count} of ${DATA.modules.length}`;
-    if (ring) {
-      ring.style.background = `conic-gradient(var(--teal) ${percent}%, rgba(255,255,255,.16) ${percent}% 100%)`;
-      ring.style.borderColor = "transparent";
-    }
+    if (value) value.textContent = percent;
+    if (label) label.textContent = `${progress.completed.length} of 6`;
+    if (ring) ring.style.background = `conic-gradient(var(--teal) ${percent}%, rgba(255,255,255,.15) ${percent}% 100%)`;
   }
 
-  function setDocumentTitle(title) {
+  function setPage(title, nav = "course") {
     document.title = title ? `${title} · ${DATA.meta.title}` : DATA.meta.title;
-  }
-
-  function setActiveNav(active) {
     document.querySelectorAll("[data-nav]").forEach((link) => {
-      const selected = link.dataset.nav === active;
-      link.classList.toggle("active", selected);
-      if (selected) link.setAttribute("aria-current", "page");
+      const active = link.dataset.nav === nav;
+      link.classList.toggle("active", active);
+      if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
+    updateHeaderProgress();
+  }
+
+  function firstNextRoute() {
+    for (const module of DATA.modules) {
+      const visited = visitedLessons(module);
+      const lessonIdx = module.lessons.findIndex((lesson) => !visited.has(lesson.id));
+      if (lessonIdx >= 0) return `#lesson/${module.id}/${lessonIdx}`;
+      if (!progress.visualVisits.includes(module.id)) return `#visuals/${module.id}`;
+      if (!progress.caseVisits.includes(module.id)) return `#case/${module.id}`;
+      if (!progress.labPassed.includes(module.id)) return `#lab/${module.id}`;
+      if (!progress.assessmentPassed.includes(module.id)) return `#assessment/${module.id}`;
+    }
+    return "#final-check";
   }
 
   function moduleCard(module) {
-    const complete = isComplete(module.id);
-    return `
-      <a class="pillar-card" href="#module/${esc(module.id)}" style="--pillar:${esc(module.colour)}">
-        <img src="${esc(module.image)}" alt="${esc(module.alt)}">
-        <div class="pillar-card-body">
-          <span class="pillar-number">${esc(module.number)}</span>
-          <h3>${esc(module.title)}</h3>
-          <p>${esc(module.strapline)}</p>
-          <div class="card-footer">
-            <span>${complete ? "Review module" : "Open module"} · ${esc(module.duration)}</span>
-            <span class="status-dot ${complete ? "complete" : ""}" aria-label="${complete ? "Complete" : "Not complete"}"></span>
-          </div>
-        </div>
-      </a>`;
+    const task = moduleTaskState(module);
+    return `<a class="module-card" href="#module/${esc(module.id)}" style="--module:${esc(module.colour)}">
+      <div class="module-card-media"><img src="${esc(module.image)}" alt="${esc(module.alt)}"><span>${esc(module.number)}</span></div>
+      <div class="module-card-body">
+        <div class="card-kicker">${isModuleComplete(module.id) ? "Complete" : `${task.percent}% complete`} · ${esc(module.duration)}</div>
+        <h3>${esc(module.title)}</h3><p>${esc(module.strapline)}</p>
+        <div class="thin-progress" aria-label="${task.percent}% complete"><span style="width:${task.percent}%"></span></div>
+        <div class="card-link">${task.done ? "Continue module" : "Start module"} <span aria-hidden="true">→</span></div>
+      </div>
+    </a>`;
   }
 
   function renderHome() {
-    const resume = firstIncomplete();
-    const percent = completionPercent();
-    const started = progress.completed.length > 0 || Object.keys(progress.scenario).length > 0;
+    const arch = DATA.courseArchitecture;
+    const percent = coursePercent();
     app.innerHTML = `
-      <section class="hero">
-        <img class="hero-media" src="assets/hero-a400m-eurofighter.jpg" alt="A generated visual concept showing an A400M and a Eurofighter in a Defence and Space hangar while an engineering team works around a digital design table.">
-        <div class="hero-inner">
-          <div>
-            <div class="eyebrow light">Airbus Defence and Space · introductory course</div>
-            <h1>A practical foundation for better sustainability decisions.</h1>
-            <p class="hero-lead">Understand the system, question the evidence and make trade-offs visible across operations, lifecycle, digital innovation, people, the value chain, climate and nature.</p>
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="#module/${esc(resume.id)}">${started ? `Resume with ${esc(resume.number)}` : "Start the course"} <span aria-hidden="true">→</span></a>
-              <a class="btn btn-ghost" href="#course">View the six modules</a>
-            </div>
-            <div class="hero-meta">
-              <span class="meta-chip">60–75 minutes</span>
-              <span class="meta-chip">6 applied modules</span>
-              <span class="meta-chip">18 knowledge questions</span>
-              <span class="meta-chip">12-question final check</span>
-            </div>
+      <section class="master-hero">
+        <img class="master-hero-media" src="assets/hero-a400m-eurofighter.jpg" alt="A generated learning visual showing an A400M and Eurofighter in a Defence and Space hangar with an engineering team.">
+        <div class="master-hero-shade"></div>
+        <div class="shell master-hero-inner">
+          <div class="hero-copy">
+            <div class="eyebrow light">Airbus Defence and Space · in-depth learning course</div>
+            <h1>Understand sustainability deeply enough to improve a real decision.</h1>
+            <p>Build evidence, expose trade-offs and connect environmental performance with engineering, operations, people, digital systems, the value chain, climate and nature.</p>
+            <div class="button-row"><a class="btn btn-primary" href="${firstNextRoute()}">${percent ? "Resume the course" : "Start the course"} →</a><a class="btn btn-ghost" href="#course">Explore the curriculum</a></div>
+            <div class="hero-chips"><span>7–9 hours</span><span>${arch.lessons} lessons</span><span>${arch.interactiveExplainers} interactive explainers</span><span>${arch.moduleQuestions + arch.finalQuestions} assessed questions</span></div>
           </div>
-          <div class="hero-system-card">
-            <div class="system-top">
-              <div><strong>Your course progress</strong><p>${progress.completed.length} of 6 modules complete</p></div>
-              <span class="pillar-number" style="--pillar:#9debe6">${percent}%</span>
-            </div>
-            <div class="mini-progress" aria-label="${percent}% complete"><span style="width:${percent}%"></span></div>
-            <p>${percent === 100 ? "All modules complete. Take or revisit the final knowledge check." : `Next: ${esc(resume.title)}`}</p>
+          <div class="hero-progress-card">
+            <span class="hero-progress-number">${percent}%</span><strong>Your learning progress</strong>
+            <div class="thin-progress light" aria-label="${percent}% complete"><span style="width:${percent}%"></span></div>
+            <p>${progress.completed.length} of 6 modules complete. Progress, answers and field notes stay in this browser.</p>
           </div>
         </div>
       </section>
-
-      <section class="section section-white">
-        <div class="shell">
-          <div class="section-head">
-            <div><div class="eyebrow">Course map</div><h2>Six modules. One decision method.</h2></div>
-            <p>Each module combines developed theory, a visual explainer, an aerospace example, a decision scenario, three knowledge questions and a field note.</p>
-          </div>
-          <div class="pillar-grid">${DATA.modules.map(moduleCard).join("")}</div>
+      <section class="section section-white"><div class="shell">
+        <div class="section-head"><div><div class="eyebrow">Complete curriculum</div><h2>Six modules, built as real learning journeys.</h2></div><p>Each module contains seven lessons, two interactive visual models, a progressive aerospace case, an applied lab, an assessment and a downloadable tool.</p></div>
+        <div class="module-grid">${DATA.modules.map(moduleCard).join("")}</div>
+      </div></section>
+      <section class="section section-ink"><div class="shell architecture-grid">
+        <div><div class="eyebrow light">Course architecture</div><h2>Dense theory, broken into usable pieces.</h2><p>The course contains more than 35,000 words of structured learning content. It is designed for spaced study, not a one-hour scroll.</p></div>
+        <div class="metric-grid">
+          <div><strong>${arch.lessons}</strong><span>theory lessons</span></div><div><strong>${arch.interactiveExplainers}</strong><span>visual explainers</span></div>
+          <div><strong>${arch.caseFiles}</strong><span>progressive cases</span></div><div><strong>${arch.appliedLabs}</strong><span>applied labs</span></div>
+          <div><strong>${arch.downloadableTools}</strong><span>work templates</span></div><div><strong>${arch.finalQuestions}</strong><span>final questions</span></div>
         </div>
-      </section>
-
-      <section class="section section-soft">
-        <div class="shell">
-          <div class="section-head">
-            <div><div class="eyebrow amber">What you will be able to do</div><h2>From vocabulary to working decisions.</h2></div>
-            <p>The course is designed for employees who need a rigorous overview, not for specialists seeking a substitute for technical or legal procedures.</p>
-          </div>
-          <div class="practice-grid">
-            <article class="practice-card"><div class="practice-index">01</div><h3>Frame the system</h3><p>Define purpose, baseline, boundary and the lifecycle stages that could change the conclusion.</p></article>
-            <article class="practice-card"><div class="practice-index">02</div><h3>Challenge the evidence</h3><p>Separate measurement, calculation, estimation and assumption; expose decision-critical uncertainty.</p></article>
-            <article class="practice-card"><div class="practice-index">03</div><h3>Act with control</h3><p>Choose a proportionate next step, name ownership and decide what must be monitored.</p></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section-dark">
-        <div class="shell decision-lens">
-          <div class="lens-intro">
-            <div class="eyebrow light">The common thread</div>
-            <h2>Six questions before a claim becomes a decision.</h2>
-            <p>Carry these questions through every module and back into daily work.</p>
-            <a class="btn btn-light" href="#course">Open the course</a>
-          </div>
-          <div class="lens-questions">
-            ${[
-              ["01 · Purpose", "What operational need and constraints must the option fulfil?"],
-              ["02 · Baseline", "Compared with which credible alternative or condition?"],
-              ["03 · Boundary", "Which stages, locations and time period are included?"],
-              ["04 · Evidence", "What is measured, estimated, assumed or missing?"],
-              ["05 · Trade-off", "What improves, worsens or remains uncertain?"],
-              ["06 · Control", "Who owns the outcome and how will it be monitored?"]
-            ].map(([label, question], index) => `<article class="lens-question" style="--pillar:${esc(DATA.modules[index].colour)}"><span>${label}</span><p>${question}</p></article>`).join("")}
-          </div>
-        </div>
-      </section>`;
-    setDocumentTitle("");
-    setActiveNav("home");
+      </div></section>
+      <section class="section section-soft"><div class="shell learning-guide">
+        <div class="section-head compact"><div><div class="eyebrow amber">Study guide</div><h2>${esc(DATA.learningGuide.title)}</h2></div></div>
+        <div class="prose-columns">${DATA.learningGuide.paragraphs.map((text) => `<p>${esc(text)}</p>`).join("")}</div>
+      </div></section>
+      <section class="section section-white"><div class="shell notice-panel"><div><div class="eyebrow">Educational boundary</div><h2>Rigorous learning without pretending to be policy.</h2></div><p>${esc(DATA.meta.notice)}</p></div></section>`;
+    setPage("", "home");
   }
 
   function renderCourse() {
-    const percent = completionPercent();
-    const resume = firstIncomplete();
+    const percent = coursePercent();
     app.innerHTML = `
-      <section class="page-intro">
-        <div class="shell page-intro-grid">
-          <div><div class="eyebrow">Course journey</div><h1>Build the foundation in six connected modules.</h1><p>Follow the sequence for the clearest learning path. Your answers, field notes and progress stay in this browser.</p></div>
-          <div class="progress-panel">
-            <div class="progress-panel-top"><div><strong>${progress.completed.length} / 6</strong><small>modules complete</small></div><a class="btn btn-dark" href="#module/${esc(resume.id)}">${percent === 100 ? "Review course" : "Continue"}</a></div>
-            <div class="progress-track" aria-label="${percent}% complete"><span style="width:${percent}%"></span></div>
-            <button class="reset-button" type="button" data-action="reset">Reset saved progress</button>
-          </div>
-        </div>
-      </section>
-      <section><div class="shell journey-list">
-        ${DATA.modules.map((module) => {
-          const complete = isComplete(module.id);
-          return `
-            <article class="journey-card" style="--pillar:${esc(module.colour)}">
-              <div class="journey-card-media"><img src="${esc(module.image)}" alt="${esc(module.alt)}"></div>
-              <div class="journey-card-body">
-                <div class="journey-card-top"><span class="journey-label">${esc(module.number)} · ${esc(module.short)}</span><span class="journey-status ${complete ? "complete" : ""}">${complete ? "Complete" : "Ready"}</span></div>
-                <h2>${esc(module.title)}</h2><p>${esc(module.promise)}</p>
-                <div class="objective-list">${module.objectives.map((objective) => `<span>${esc(objective)}</span>`).join("")}</div>
-                <div class="journey-meta"><span>${esc(module.duration)}</span><span>4 theory chapters</span><span>2 visual examples</span><span>4 applied questions</span></div>
-                <div class="button-row"><a class="btn ${complete ? "btn-outline" : "btn-dark"}" href="#module/${esc(module.id)}">${complete ? "Review module" : "Start module"} <span aria-hidden="true">→</span></a></div>
-              </div>
-            </article>`;
+      <section class="page-hero"><div class="shell page-hero-grid"><div><div class="eyebrow">Curriculum</div><h1>A 7–9 hour learning journey.</h1><p>Work through the modules in sequence for the clearest progression, or reopen any completed item for review.</p></div><div class="course-progress-box"><strong>${percent}%</strong><span>overall learning progress</span><div class="thin-progress"><span style="width:${percent}%"></span></div><a class="btn btn-dark" href="${firstNextRoute()}">Continue →</a></div></div></section>
+      <section class="section section-white"><div class="shell journey-stack">
+        ${DATA.modules.map((module, index) => {
+          const task = moduleTaskState(module);
+          return `<article class="journey-row" style="--module:${esc(module.colour)}">
+            <div class="journey-number">${String(index + 1).padStart(2, "0")}</div>
+            <div class="journey-image"><img src="${esc(module.image)}" alt="${esc(module.alt)}"></div>
+            <div class="journey-copy"><div class="card-kicker">${esc(module.duration)} · ${module.lessons.length} lessons · ${task.percent}% complete</div><h2>${esc(module.title)}</h2><p>${esc(module.promise)}</p>
+              <div class="journey-pills"><span>2 visual explainers</span><span>1 case file</span><span>1 applied lab</span><span>8-question assessment</span><span>Downloadable tool</span></div>
+              <div class="thin-progress"><span style="width:${task.percent}%"></span></div><a class="btn btn-outline" href="#module/${esc(module.id)}">Open module →</a>
+            </div>
+          </article>`;
         }).join("")}
       </div></section>
-      <section class="section section-soft"><div class="shell final-invite">
-        <div><div class="eyebrow">Course completion</div><h2>Finish with a 12-question knowledge check.</h2><p>A score of 10/12 and completion of all six modules marks the learning journey complete.</p></div>
-        <a class="btn btn-dark" href="#final-check">Open final check →</a>
-      </div></section>`;
-    setDocumentTitle("Course");
-    setActiveNav("course");
+      <section class="section section-soft"><div class="shell final-banner"><div><div class="eyebrow">Course synthesis</div><h2>Capstone + 20-question final assessment.</h2><p>Complete all modules, build one defensible decision and test transfer across the whole curriculum.</p></div><div class="button-row"><a class="btn btn-outline" href="#capstone">Open capstone</a><a class="btn btn-dark" href="#final-check">Final assessment →</a></div></div></section>`;
+    setPage("Course", "course");
   }
 
-  function answerOptions({ kind, module, question, questionIndex = null }) {
-    const isScenario = kind === "scenario";
-    const selected = isScenario
-      ? progress.scenario[module.id]
-      : progress.checks[module.id]?.[questionIndex];
-    const answered = Number.isInteger(selected);
-    return `
-      <div class="option-list" role="group" aria-label="${esc(question.question)}">
-        ${question.options.map((rawOption, index) => {
-          const option = typeof rawOption === "string" ? { text: rawOption } : rawOption;
-          const isSelected = selected === index;
-          const stateClass = isSelected ? (index === question.correct ? "correct" : "incorrect") : "";
-          return `<button class="option ${isSelected ? "selected" : ""} ${stateClass}" type="button" data-action="answer" data-kind="${kind}" data-id="${esc(module.id)}" ${questionIndex === null ? "" : `data-question="${questionIndex}"`} data-index="${index}" aria-pressed="${isSelected}"><span class="option-index">${String.fromCharCode(65 + index)}</span><span>${esc(option.text)}</span></button>`;
-        }).join("")}
-      </div>
-      ${answered ? (() => {
-        const raw = question.options[selected];
-        const option = typeof raw === "string" ? null : raw;
-        const correct = selected === question.correct;
-        const feedback = correct ? (option?.feedback || question.explanation) : (option?.feedback || "Look again and choose the response that makes evidence, boundaries and accountable action most explicit.");
-        return `<div class="feedback ${correct ? "" : "try-again"}"><strong>${correct ? "Correct." : "Not yet."}</strong> ${esc(feedback)}</div>`;
-      })() : ""}`;
-  }
-
-  function sourceLinks(module) {
-    return module.sources.map((sourceId) => {
-      const source = DATA.sources[sourceId];
-      return `<a class="source-link" href="${esc(source.url)}" target="_blank" rel="noopener noreferrer"><span class="source-org">${esc(source.organisation)}</span><span class="source-title">${esc(source.title)}</span><span class="source-arrow" aria-hidden="true">↗</span></a>`;
-    }).join("");
-  }
-
-  function renderLesson(lesson) {
-    return `
-      <article class="learning-card theory-card" id="${esc(lesson.label.slice(0, 2).replace(/\D/g, "") ? `lesson-${lesson.label.slice(0, 2)}` : "lesson")}">
-        <div class="lesson-label">${esc(lesson.label)}</div>
-        <h2>${esc(lesson.title)}</h2>
-        <div class="theory-copy">${lesson.paragraphs.map((paragraph) => `<p>${esc(paragraph)}</p>`).join("")}</div>
-        <div class="point-grid">${lesson.points.map((point) => `<div class="point">${esc(point)}</div>`).join("")}</div>
-        <div class="lesson-callout"><strong>${esc(lesson.callout.label)}</strong><p>${esc(lesson.callout.text)}</p></div>
-      </article>`;
+  function moduleChecklist(module) {
+    const visited = visitedLessons(module);
+    return `<div class="module-checklist">
+      ${module.lessons.map((lesson, index) => `<a href="#lesson/${esc(module.id)}/${index}" class="check-item ${visited.has(lesson.id) ? "done" : ""}"><span>${visited.has(lesson.id) ? "✓" : String(index + 1).padStart(2, "0")}</span><div><strong>${esc(lesson.title)}</strong><small>${esc(lesson.duration)}</small></div></a>`).join("")}
+      <a href="#visuals/${esc(module.id)}" class="check-item ${progress.visualVisits.includes(module.id) ? "done" : ""}"><span>${progress.visualVisits.includes(module.id) ? "✓" : "V"}</span><div><strong>Interactive visual explainers</strong><small>2 guided models</small></div></a>
+      <a href="#case/${esc(module.id)}" class="check-item ${progress.caseVisits.includes(module.id) ? "done" : ""}"><span>${progress.caseVisits.includes(module.id) ? "✓" : "C"}</span><div><strong>Progressive case file</strong><small>Applied aerospace analysis</small></div></a>
+      <a href="#lab/${esc(module.id)}" class="check-item ${progress.labPassed.includes(module.id) ? "done" : ""}"><span>${progress.labPassed.includes(module.id) ? "✓" : "L"}</span><div><strong>Applied laboratory</strong><small>4 decisions · all correct</small></div></a>
+      <a href="#assessment/${esc(module.id)}" class="check-item ${progress.assessmentPassed.includes(module.id) ? "done" : ""}"><span>${progress.assessmentPassed.includes(module.id) ? "✓" : "A"}</span><div><strong>Module assessment</strong><small>8 questions · 75% pass</small></div></a>
+    </div>`;
   }
 
   function renderModule(module) {
-    const scenarioCorrect = progress.scenario[module.id] === module.scenario.correct;
-    const moduleChecks = progress.checks[module.id] || {};
-    const correctChecks = module.checks.filter((check, index) => moduleChecks[index] === check.correct).length;
-    const ready = scenarioCorrect && correctChecks === module.checks.length;
-    const complete = isComplete(module.id);
-    const next = nextModule(module.id);
+    const task = moduleTaskState(module);
+    const startIdx = module.lessons.findIndex((lesson) => !visitedLessons(module).has(lesson.id));
     app.innerHTML = `
-      <section class="module-hero" style="--pillar:${esc(module.colour)}">
-        <img class="module-hero-media" src="${esc(module.image)}" alt="${esc(module.alt)}">
-        <div class="module-hero-inner">
-          <div class="crumbs"><a href="#course">Course journey</a><span aria-hidden="true">/</span><span>${esc(module.number)}</span></div>
-          <span class="module-tag">${esc(module.number)} · ${esc(module.short)}</span>
-          <h1>${esc(module.title)}</h1><p>${esc(module.promise)}</p>
-          <div class="module-meta"><span>${esc(module.duration)}</span><span>4 theory chapters</span><span>Applied scenario</span><span>${complete ? "Completed" : "In progress"}</span></div>
+      <section class="module-banner" style="--module:${esc(module.colour)}"><img src="${esc(module.image)}" alt="${esc(module.alt)}"><div class="module-banner-shade"></div><div class="shell module-banner-inner"><div class="crumbs"><a href="#course">Course</a><span>/</span><span>${esc(module.number)}</span></div><div class="module-tag">${esc(module.number)} · ${esc(module.duration)}</div><h1>${esc(module.title)}</h1><p>${esc(module.promise)}</p><div class="module-progress-line"><div class="thin-progress light"><span style="width:${task.percent}%"></span></div><strong>${task.percent}% complete</strong></div></div></section>
+      <section class="section section-white"><div class="shell module-overview-grid">
+        <div class="module-overview-main">
+          <article class="briefing-card"><div class="eyebrow">Module briefing</div><h2>${esc(module.briefing.title)}</h2>${module.briefing.paragraphs.map((text) => `<p>${esc(text)}</p>`).join("")}</article>
+          <article class="objective-panel"><div><div class="eyebrow">Learning objectives</div><h2>By the end of this module, you can:</h2></div><div class="objective-list large">${module.objectives.map((objective) => `<span>${esc(objective)}</span>`).join("")}</div></article>
+          <article class="misconception-panel"><div class="eyebrow amber">Common traps</div><h2>Three ideas to challenge before you begin.</h2><div class="myth-grid">${module.misconceptions.map((item) => `<div><strong>“${esc(item.myth)}”</strong><p>${esc(item.correction)}</p></div>`).join("")}</div></article>
+          <article class="tool-panel"><div><div class="eyebrow light">Module work tool</div><h2>${esc(module.tool.title)}</h2><p>${esc(module.tool.description)}</p></div><button class="btn btn-light" type="button" data-action="download-tool" data-module="${esc(module.id)}">Download CSV template ↓</button></article>
         </div>
-      </section>
-      <section class="module-shell" style="--pillar:${esc(module.colour)}"><div class="shell module-layout">
-        <aside class="module-side" aria-label="Module navigation">
-          <div class="side-card"><h2>Inside this module</h2><nav class="side-nav">
-            ${module.lessons.map((lesson, index) => `<a href="#lesson-${index + 1}">${esc(lesson.label)}</a>`).join("")}
-            <a href="#visual-explainer">Visual explainer</a><a href="#applied-example">Applied example</a><a href="#scenario">Decision scenario</a><a href="#knowledge-check">Knowledge check</a><a href="#field-note">Field note</a><a href="#sources-used">Sources used</a>
-          </nav></div>
-          <div class="side-card"><h2>Core question</h2><p>${esc(module.coreQuestion)}</p></div>
-          <a class="btn btn-outline" href="#course">← Back to course</a>
-        </aside>
-        <div class="module-main">
-          <article class="learning-card objectives-card">
-            <div class="lesson-label">Learning objectives</div><h2>By the end of this module, you can:</h2>
-            <div class="objective-list large">${module.objectives.map((objective) => `<span>${esc(objective)}</span>`).join("")}</div>
-          </article>
-
-          ${renderLesson(module.lessons[0]).replace('id="lesson-01"', 'id="lesson-1"')}
-          ${renderLesson(module.lessons[1]).replace('id="lesson-02"', 'id="lesson-2"')}
-
-          <figure class="support-figure"><img src="${esc(module.supportImage)}" alt="${esc(module.supportAlt)}"><figcaption><strong>Look across functions.</strong> The strongest sustainability decisions connect technical, operational, environmental and evidence owners.</figcaption></figure>
-
-          ${renderLesson(module.lessons[2]).replace('id="lesson-03"', 'id="lesson-3"')}
-          ${renderLesson(module.lessons[3]).replace('id="lesson-04"', 'id="lesson-4"')}
-
-          <article class="learning-card visual-card" id="visual-explainer">
-            <div class="lesson-label">Visual explainer</div><h2>${esc(module.visual.title)}</h2><p>${esc(module.visual.intro)}</p>
-            <div class="visual-flow">${module.visual.items.map((item) => `<div class="visual-step"><span>${esc(item.code)}</span><h3>${esc(item.title)}</h3><p>${esc(item.text)}</p></div>`).join("")}</div>
-          </article>
-
-          <article class="learning-card case-study" id="applied-example">
-            <div class="case-media"><img src="${esc(module.supportImage)}" alt=""></div>
-            <div class="case-copy"><div class="lesson-label">${esc(module.caseStudy.eyebrow)}</div><h2>${esc(module.caseStudy.title)}</h2><p>${esc(module.caseStudy.context)}</p><div class="analysis-box"><strong>How to analyse it</strong><p>${esc(module.caseStudy.analysis)}</p></div></div>
-          </article>
-
-          <article class="learning-card scenario-card" id="scenario">
-            <div class="lesson-label">Decision scenario</div><h2>${esc(module.scenario.title)}</h2><div class="scenario-brief">${esc(module.scenario.brief)}</div><div class="question">${esc(module.scenario.question)}</div>
-            ${answerOptions({ kind: "scenario", module, question: module.scenario })}
-          </article>
-
-          <article class="learning-card" id="knowledge-check">
-            <div class="lesson-label">Knowledge check · ${correctChecks}/3 correct</div><h2>Apply the concepts, not just the vocabulary.</h2>
-            <div class="question-stack">${module.checks.map((check, index) => `<section class="mini-question"><div class="question-number">Question ${index + 1} of 3</div><div class="question">${esc(check.question)}</div>${answerOptions({ kind: "check", module, question: check, questionIndex: index })}</section>`).join("")}</div>
-          </article>
-
-          <article class="learning-card note-card" id="field-note">
-            <div class="lesson-label">Practical output · private field note</div><h2>Bring the module back to your work.</h2><p>${esc(module.reflection)}</p>
-            <label class="sr-only" for="note-${esc(module.id)}">Your field note</label><textarea id="note-${esc(module.id)}" data-note-id="${esc(module.id)}" rows="5" placeholder="Write a short working note. It is saved only in this browser.">${esc(progress.notes[module.id] || "")}</textarea>
-            <div class="note-actions"><button class="btn btn-outline" type="button" data-action="save-note" data-id="${esc(module.id)}">Save field note</button><span>Private to this browser · not submitted</span></div>
-          </article>
-
-          <article class="learning-card takeaway-card"><div class="takeaway-grid"><div class="takeaway-bar"></div><div class="takeaway-copy"><div class="lesson-label">Module takeaway</div><h2>${esc(module.strapline)}</h2><p>${esc(module.takeaway)}</p></div></div></article>
-
-          <article class="learning-card" id="sources-used"><div class="lesson-label">Evidence trail</div><h2>Sources used in this module</h2><p>Public sources were reviewed on ${esc(DATA.meta.reviewed)}. Internal approved documentation remains authoritative for Airbus work.</p><div class="source-list">${sourceLinks(module)}</div></article>
-
-          <section class="completion-card"><div class="completion-top"><div>
-            <h2>${complete ? `${esc(module.number)} completed` : ready ? "Ready to complete this module" : "Complete the scenario and three questions"}</h2>
-            <p>${complete ? "Your progress is saved in this browser." : ready ? "Your field note can be edited at any time." : `${scenarioCorrect ? "Scenario correct" : "Scenario pending"} · ${correctChecks}/3 knowledge questions correct.`}</p>
-          </div>${complete ? (next ? `<a class="btn btn-primary" href="#module/${esc(next.id)}">Continue to ${esc(next.number)} →</a>` : `<a class="btn btn-primary" href="#final-check">Take the final check →</a>`) : `<button class="btn btn-dark" type="button" data-action="complete" data-id="${esc(module.id)}" ${ready ? "" : "disabled"}>Complete ${esc(module.number)}</button>`}</div></section>
-        </div>
+        <aside class="module-roadmap"><div class="roadmap-sticky"><div class="roadmap-head"><span>${task.done}/${task.total}</span><div><strong>Module roadmap</strong><small>Complete every item</small></div></div>${moduleChecklist(module)}<a class="btn btn-dark full" href="#lesson/${esc(module.id)}/${startIdx >= 0 ? startIdx : 0}">${task.done ? "Continue module" : "Start lesson 1"} →</a></div></aside>
       </div></section>`;
-    setDocumentTitle(module.title);
-    setActiveNav("course");
+    setPage(module.title, "course");
   }
 
-  function finalScore() {
-    return DATA.finalAssessment.questions.reduce((score, question, index) => score + (progress.finalAnswers[index] === question.correct ? 1 : 0), 0);
+  function lessonNav(module, index) {
+    const prev = index > 0 ? `#lesson/${module.id}/${index - 1}` : `#module/${module.id}`;
+    const next = index < module.lessons.length - 1 ? `#lesson/${module.id}/${index + 1}` : `#visuals/${module.id}`;
+    return `<div class="lesson-pagination"><a class="btn btn-outline" href="${prev}">← ${index > 0 ? "Previous lesson" : "Module overview"}</a><a class="btn btn-dark" href="${next}">${index < module.lessons.length - 1 ? "Next lesson" : "Open visual explainers"} →</a></div>`;
   }
 
-  function renderFinalCheck() {
+  function renderLesson(module, index) {
+    const lesson = module.lessons[index];
+    if (!lesson) return renderNotFound();
+    const visits = new Set(progress.lessonVisits[module.id] || []);
+    visits.add(lesson.id);
+    progress.lessonVisits[module.id] = [...visits];
+    syncModuleCompletion(module);
+    saveProgress();
+    const deep = lesson.deepDive || { title: "Go deeper", paragraphs: [] };
+    const figureImage = index === 1 ? module.supportImage : module.secondaryImage;
+    const figureAlt = index === 1 ? module.supportAlt : module.secondaryAlt;
+    app.innerHTML = `
+      <section class="lesson-header" style="--module:${esc(module.colour)}"><div class="shell"><div class="crumbs"><a href="#course">Course</a><span>/</span><a href="#module/${esc(module.id)}">${esc(module.number)}</a><span>/</span><span>Lesson ${index + 1}</span></div><div class="lesson-progress-label">Lesson ${index + 1} of ${module.lessons.length} · ${esc(lesson.duration)}</div><h1>${esc(lesson.title)}</h1><div class="lesson-track"><span style="width:${Math.round(((index + 1) / module.lessons.length) * 100)}%"></span></div></div></section>
+      <section class="lesson-layout shell">
+        <aside class="lesson-side"><div class="lesson-side-sticky"><div class="eyebrow">In this module</div>${module.lessons.map((item, idx) => `<a href="#lesson/${esc(module.id)}/${idx}" class="${idx === index ? "active" : ""} ${visitedLessons(module).has(item.id) ? "visited" : ""}"><span>${visitedLessons(module).has(item.id) ? "✓" : idx + 1}</span>${esc(item.title)}</a>`).join("")}<a href="#module/${esc(module.id)}" class="back-link">← Module roadmap</a></div></aside>
+        <article class="lesson-content">
+          <div class="lesson-opening"><div class="lesson-label">${esc(lesson.label)}</div><h2>${esc(lesson.title)}</h2>${lesson.paragraphs.map((text) => `<p>${esc(text)}</p>`).join("")}</div>
+          ${index === 1 || index === 5 ? `<figure class="lesson-figure"><img src="${esc(figureImage)}" alt="${esc(figureAlt)}"><figcaption>Visual context · Technical, operational and environmental evidence must be reviewed together.</figcaption></figure>` : ""}
+          <section class="deep-dive"><div class="eyebrow">Deep dive</div><h2>${esc(deep.title)}</h2>${(deep.paragraphs || []).map((text) => `<p>${esc(text)}</p>`).join("")}</section>
+          <section class="key-points"><div class="eyebrow">Decision essentials</div><div class="point-grid">${lesson.points.map((point) => `<div><span>✓</span><p>${esc(point)}</p></div>`).join("")}</div></section>
+          <section class="worked-example"><div class="eyebrow light">Worked example</div><h2>Translate the concept into an aerospace decision.</h2><p>${esc(lesson.workedExample || "Use the concept on a non-confidential decision from your area and identify what evidence would change the preferred option.")}</p></section>
+          <section class="callout-card"><strong>${esc(lesson.callout.label)}</strong><p>${esc(lesson.callout.text)}</p></section>
+          <section class="field-note"><div><div class="eyebrow">Field note</div><h2>Make the learning usable.</h2><p>${esc(module.reflection)}</p><small>Do not enter confidential, personal, supplier-sensitive or controlled programme information.</small></div><textarea data-note="${esc(lesson.id)}" placeholder="Write a generic, non-confidential note…">${esc(progress.notes[lesson.id] || "")}</textarea></section>
+          ${lessonNav(module, index)}
+        </article>
+      </section>`;
+    setPage(lesson.title, "course");
+  }
+
+  function renderVisuals(module) {
+    if (!progress.visualVisits.includes(module.id)) progress.visualVisits.push(module.id);
+    syncModuleCompletion(module); saveProgress();
+    app.innerHTML = `<section class="page-hero compact"><div class="shell"><div class="crumbs"><a href="#module/${esc(module.id)}">${esc(module.number)} overview</a><span>/</span><span>Visual explainers</span></div><div class="eyebrow">Interactive visual lesson</div><h1>See the system, step by step.</h1><p>Use the controls inside each model to expose the reasoning behind the sequence.</p></div></section>
+      <section class="section section-white"><div class="shell visual-stack">${module.explainers.map((visual, vIndex) => `<article class="interactive-visual" style="--module:${esc(module.colour)}" data-visual="${vIndex}"><div class="visual-copy"><div class="eyebrow">${esc(visual.kicker)}</div><h2>${esc(visual.title)}</h2><p>${esc(visual.intro)}</p><div class="visual-tabs">${visual.items.map((item, idx) => `<button type="button" data-action="visual-step" data-module="${esc(module.id)}" data-visual="${vIndex}" data-step="${idx}" class="${idx === 0 ? "active" : ""}"><span>${esc(item.code)}</span>${esc(item.title)}</button>`).join("")}</div></div><div class="visual-stage"><div class="visual-orbit">${visual.items.map((item, idx) => `<span style="--i:${idx};--n:${visual.items.length}" class="${idx === 0 ? "active" : ""}">${esc(item.code)}</span>`).join("")}</div><div class="visual-detail"><span>${esc(visual.items[0].code)}</span><h3>${esc(visual.items[0].title)}</h3><p>${esc(visual.items[0].text)}</p><small>${esc(visual.items[0].detail)}</small></div></div></article>`).join("")}
+        <div class="lesson-pagination"><a class="btn btn-outline" href="#module/${esc(module.id)}">← Module overview</a><a class="btn btn-dark" href="#case/${esc(module.id)}">Open case file →</a></div>
+      </div></section>`;
+    setPage(`${module.number} visual explainers`, "course");
+  }
+
+  function renderCase(module) {
+    if (!progress.caseVisits.includes(module.id)) progress.caseVisits.push(module.id);
+    syncModuleCompletion(module); saveProgress();
+    const item = module.caseFile;
+    app.innerHTML = `<section class="case-hero" style="--module:${esc(module.colour)}"><img src="${esc(module.supportImage)}" alt="${esc(module.supportAlt)}"><div class="case-hero-shade"></div><div class="shell"><div class="crumbs"><a href="#module/${esc(module.id)}">${esc(module.number)} overview</a><span>/</span><span>Case file</span></div><div class="eyebrow light">${esc(item.subtitle)}</div><h1>${esc(item.title)}</h1><p>Reveal how the decision changes as new evidence enters the system.</p></div></section>
+      <section class="section section-white"><div class="shell case-timeline">${item.stages.map((stage, idx) => `<article><div class="case-stage-number">${String(idx + 1).padStart(2, "0")}</div><div class="case-stage-copy"><h2>${esc(stage.title)}</h2><p>${esc(stage.text)}</p><div class="evidence-chips">${stage.evidence.map((evidence) => `<span>${esc(evidence)}</span>`).join("")}</div></div></article>`).join("")}
+        <div class="case-question"><div class="eyebrow light">Decision prompt</div><h2>${esc(item.prompt)}</h2><textarea data-note="case-${esc(module.id)}" placeholder="Write a non-confidential response…">${esc(progress.notes[`case-${module.id}`] || "")}</textarea></div>
+        <div class="lesson-pagination"><a class="btn btn-outline" href="#visuals/${esc(module.id)}">← Visual explainers</a><a class="btn btn-dark" href="#lab/${esc(module.id)}">Open applied lab →</a></div>
+      </div></section>`;
+    setPage(`${module.number} case file`, "course");
+  }
+
+  function questionOptions(question, selected, attrs) {
+    const answered = Number.isInteger(selected);
+    return `<div class="answer-list">${question.options.map((option, idx) => `<button type="button" ${attrs} data-index="${idx}" class="answer-option ${selected === idx ? (idx === question.correct ? "correct" : "incorrect") : ""}"><span>${String.fromCharCode(65 + idx)}</span><p>${esc(option)}</p></button>`).join("")}</div>${answered ? `<div class="answer-feedback ${selected === question.correct ? "correct" : "incorrect"}"><strong>${selected === question.correct ? "Correct." : "Not yet."}</strong> ${esc(question.explanation)}</div>` : ""}`;
+  }
+
+  function renderLab(module) {
+    const answers = progress.labAnswers[module.id] || {};
+    const correct = module.lab.questions.filter((question, idx) => answers[idx] === question.correct).length;
+    const passed = correct === module.lab.questions.length;
+    if (passed && !progress.labPassed.includes(module.id)) progress.labPassed.push(module.id);
+    if (!passed) progress.labPassed = progress.labPassed.filter((id) => id !== module.id);
+    syncModuleCompletion(module); saveProgress();
+    app.innerHTML = `<section class="page-hero compact"><div class="shell"><div class="crumbs"><a href="#module/${esc(module.id)}">${esc(module.number)} overview</a><span>/</span><span>Applied lab</span></div><div class="eyebrow">Applied laboratory</div><h1>${esc(module.lab.title)}</h1><p>${esc(module.lab.intro)}</p><div class="score-chip ${passed ? "passed" : ""}">${correct}/${module.lab.questions.length} correct</div></div></section>
+      <section class="section section-soft"><div class="shell question-stack">${module.lab.questions.map((question, idx) => `<article class="question-card"><div class="question-count">Decision ${idx + 1} of ${module.lab.questions.length}</div><h2>${esc(question.question)}</h2>${questionOptions(question, answers[idx], `data-action="lab-answer" data-module="${esc(module.id)}" data-question="${idx}"`)}</article>`).join("")}
+        ${passed ? `<div class="pass-banner"><strong>Laboratory complete.</strong><p>You have made all four decisions using the module logic.</p></div>` : ""}
+        <div class="lesson-pagination"><a class="btn btn-outline" href="#case/${esc(module.id)}">← Case file</a><a class="btn btn-dark ${passed ? "" : "disabled"}" href="${passed ? `#assessment/${esc(module.id)}` : `#lab/${esc(module.id)}`}" ${passed ? "" : 'aria-disabled="true"'}>Open module assessment →</a></div>
+      </div></section>`;
+    setPage(`${module.number} applied lab`, "course");
+  }
+
+  function renderAssessment(module) {
+    const answers = progress.assessmentAnswers[module.id] || {};
+    const answered = Object.keys(answers).length;
+    const correct = module.assessmentQuestions.filter((question, idx) => answers[idx] === question.correct).length;
+    const passed = answered === module.assessmentQuestions.length && correct >= 6;
+    if (passed && !progress.assessmentPassed.includes(module.id)) progress.assessmentPassed.push(module.id);
+    if (!passed) progress.assessmentPassed = progress.assessmentPassed.filter((id) => id !== module.id);
+    syncModuleCompletion(module); saveProgress();
+    const nextModule = DATA.modules[moduleIndex(module.id) + 1];
+    app.innerHTML = `<section class="page-hero compact"><div class="shell"><div class="crumbs"><a href="#module/${esc(module.id)}">${esc(module.number)} overview</a><span>/</span><span>Assessment</span></div><div class="eyebrow">Module assessment</div><h1>Apply the concepts, not just the vocabulary.</h1><p>Answer all eight questions. A score of 6/8 is required; you can revise every answer.</p><div class="score-chip ${passed ? "passed" : ""}">${answered < 8 ? `${answered}/8 answered` : `${correct}/8 correct`}</div></div></section>
+      <section class="section section-white"><div class="shell question-stack">${module.assessmentQuestions.map((question, idx) => `<article class="question-card"><div class="question-count">Question ${idx + 1} of 8</div><h2>${esc(question.question)}</h2>${questionOptions(question, answers[idx], `data-action="assessment-answer" data-module="${esc(module.id)}" data-question="${idx}"`)}</article>`).join("")}
+        ${answered === 8 ? `<div class="result-banner ${passed ? "passed" : "retry"}"><strong>${passed ? "Module assessment passed." : "Review and try again."}</strong><p>${passed ? `You scored ${correct}/8. ${syncModuleCompletion(module) ? "The complete module is now finished." : "Return to the roadmap to complete any remaining item."}` : `You scored ${correct}/8. Six correct answers are required.`}</p></div>` : ""}
+        <div class="lesson-pagination"><a class="btn btn-outline" href="#module/${esc(module.id)}">← Module roadmap</a>${passed ? `<a class="btn btn-dark" href="${nextModule ? `#module/${esc(nextModule.id)}` : "#capstone"}">${nextModule ? `Open ${esc(nextModule.number)}` : "Open capstone"} →</a>` : `<a class="btn btn-dark" href="#lesson/${esc(module.id)}/0">Review lessons →</a>`}</div>
+      </div></section>`;
+    setPage(`${module.number} assessment`, "course");
+  }
+
+  function renderCapstone() {
+    const item = DATA.capstone;
+    app.innerHTML = `<section class="page-hero"><div class="shell"><div class="eyebrow">Course synthesis</div><h1>${esc(item.title)}</h1>${item.intro.map((text) => `<p>${esc(text)}</p>`).join("")}</div></section>
+      <section class="section section-white"><div class="shell capstone-grid">${item.stages.map((stage) => `<article><span>${esc(stage.code)}</span><h2>${esc(stage.title)}</h2><p>${esc(stage.text)}</p><textarea data-note="capstone-${esc(stage.code)}" placeholder="Draft a non-confidential response…">${esc(progress.notes[`capstone-${stage.code}`] || "")}</textarea></article>`).join("")}</div><div class="capstone-review"><strong>Peer review prompt</strong><p>${esc(item.review)}</p><div class="button-row"><button type="button" class="btn btn-outline" data-action="export-notes">Export all field notes ↓</button><a class="btn btn-dark" href="#final-check">Open final assessment →</a></div></div></section>`;
+    setPage("Capstone", "course");
+  }
+
+  function renderFinal() {
+    const answers = progress.finalAnswers || {};
     const questions = DATA.finalAssessment.questions;
-    const answered = Object.keys(progress.finalAnswers).length;
-    const score = finalScore();
-    const finished = answered === questions.length;
-    const passed = finished && score >= 10;
-    if (passed && !progress.finalPassed) {
-      progress.finalPassed = true;
-      saveProgress();
-    }
-    const courseComplete = progress.completed.length === DATA.modules.length && progress.finalPassed;
-    app.innerHTML = `
-      <section class="page-intro"><div class="shell page-intro-grid"><div><div class="eyebrow">Final knowledge check</div><h1>Connect the decisions across all six modules.</h1><p>${esc(DATA.finalAssessment.intro)}</p></div>
-        <div class="progress-panel"><div class="progress-panel-top"><div><strong>${score} / 12</strong><small>${finished ? (passed ? "passing score reached" : "review and retry") : `${answered} answered`}</small></div><span class="score-badge ${passed ? "passed" : ""}">${finished ? `${Math.round(score / 12 * 100)}%` : "In progress"}</span></div><div class="progress-track"><span style="width:${answered / 12 * 100}%"></span></div><p>${progress.completed.length}/6 modules complete</p></div>
-      </div></section>
-      <section><div class="shell assessment-shell">
-        ${questions.map((question, index) => {
-          const selected = progress.finalAnswers[index];
-          const hasAnswer = Number.isInteger(selected);
-          const correct = selected === question.correct;
-          return `<article class="assessment-question"><div class="assessment-label">${esc(question.module)} · Question ${index + 1}</div><h2>${esc(question.question)}</h2><div class="option-list">${question.options.map((option, optionIndex) => {
-            const isSelected = selected === optionIndex;
-            const cls = isSelected ? (optionIndex === question.correct ? "correct" : "incorrect") : "";
-            return `<button class="option ${isSelected ? "selected" : ""} ${cls}" type="button" data-action="final-answer" data-question="${index}" data-index="${optionIndex}" aria-pressed="${isSelected}"><span class="option-index">${String.fromCharCode(65 + optionIndex)}</span><span>${esc(option)}</span></button>`;
-          }).join("")}</div>${hasAnswer ? `<div class="feedback ${correct ? "" : "try-again"}"><strong>${correct ? "Correct." : "Review this one."}</strong> ${esc(question.explanation)}</div>` : ""}</article>`;
-        }).join("")}
-        ${finished ? `<section class="final-result ${passed ? "passed" : "review"}"><div><div class="eyebrow">${passed ? "Knowledge check passed" : "Review recommended"}</div><h2>${score}/12 · ${Math.round(score / 12 * 100)}%</h2><p>${passed ? (progress.completed.length === 6 ? "All course requirements are complete." : `Complete the remaining ${6 - progress.completed.length} module(s) to finish the learning journey.`) : "Revisit the feedback, review the relevant modules and try again. A score of 10/12 is required."}</p></div><div class="result-actions"><button class="btn btn-outline" type="button" data-action="retake-final">Reset final check</button>${passed ? `<button class="btn btn-dark" type="button" data-action="download-notes">Download my field notes</button>` : `<a class="btn btn-dark" href="#course">Review course</a>`}</div></section>` : ""}
-        ${courseComplete ? `<div class="course-complete"><span aria-hidden="true">✓</span><div><strong>Learning journey complete</strong><p>Sustainable Aviation Foundations · ${esc(DATA.meta.version)}. This is a learning-status message, not an official qualification or certificate.</p></div></div>` : ""}
+    const answered = Object.keys(answers).length;
+    const correct = questions.filter((question, idx) => answers[idx] === question.correct).length;
+    const modulesReady = progress.completed.length === DATA.modules.length;
+    const passed = answered === questions.length && correct >= 16 && modulesReady;
+    progress.finalPassed = passed; saveProgress();
+    app.innerHTML = `<section class="page-hero compact"><div class="shell"><div class="eyebrow">Final applied assessment</div><h1>Transfer the method across all six modules.</h1><p>${esc(DATA.finalAssessment.intro)}</p><div class="score-chip ${passed ? "passed" : ""}">${answered < questions.length ? `${answered}/${questions.length} answered` : `${correct}/${questions.length} correct`}</div>${!modulesReady ? `<p class="assessment-warning">The assessment can be reviewed now, but completion also requires all six modules. Current modules complete: ${progress.completed.length}/6.</p>` : ""}</div></section>
+      <section class="section section-soft"><div class="shell question-stack">${questions.map((question, idx) => `<article class="question-card"><div class="question-count">${esc(question.module)} · Question ${idx + 1} of ${questions.length}</div><h2>${esc(question.question)}</h2>${questionOptions(question, answers[idx], `data-action="final-answer" data-question="${idx}"`)}</article>`).join("")}
+        ${answered === questions.length ? `<div class="result-banner ${passed ? "passed" : "retry"}"><strong>${passed ? "Course assessment passed." : "Completion is not yet unlocked."}</strong><p>${passed ? `You scored ${correct}/20 and completed all six modules.` : `Score: ${correct}/20. You need at least 16 correct answers and all six modules complete.`}</p></div>` : ""}
+        <div class="lesson-pagination"><a class="btn btn-outline" href="#capstone">← Capstone</a><a class="btn btn-dark" href="#course">Review course →</a></div>
       </div></section>`;
-    setDocumentTitle("Final knowledge check");
-    setActiveNav("final");
+    setPage("Final assessment", "final");
   }
 
   function renderGlossary() {
-    app.innerHTML = `
-      <section class="page-intro"><div class="shell page-intro-grid"><div><div class="eyebrow">Plain-language glossary</div><h1>Use the terminology with precision.</h1><p>Acronyms are expanded on first use in the course. This glossary is a learning aid, not a legal or technical definition source.</p></div><div class="glossary-search"><label for="glossary-filter">Filter terms</label><input id="glossary-filter" type="search" placeholder="Type LCA, boundary, resilience…" autocomplete="off"></div></div></section>
-      <section><div class="shell glossary-grid" id="glossary-grid">${DATA.glossary.map((item) => `<article class="glossary-card" data-term="${esc((item.term + " " + item.definition).toLowerCase())}"><h2>${esc(item.term)}</h2><p>${esc(item.definition)}</p></article>`).join("")}</div></section>`;
-    const filter = document.querySelector("#glossary-filter");
-    filter.addEventListener("input", () => {
-      const query = filter.value.trim().toLowerCase();
-      document.querySelectorAll(".glossary-card").forEach((card) => card.hidden = query && !card.dataset.term.includes(query));
-    });
-    setDocumentTitle("Glossary");
-    setActiveNav("glossary");
+    app.innerHTML = `<section class="page-hero compact"><div class="shell"><div class="eyebrow">Reference</div><h1>Course glossary.</h1><p>Thirty terms used across the complete curriculum.</p><label class="search-box"><span>Search terms</span><input type="search" data-action="filter-glossary" placeholder="Try: baseline, LCA, model drift…"></label></div></section><section class="section section-white"><div class="shell glossary-grid">${DATA.glossary.sort((a,b) => a.term.localeCompare(b.term)).map((item) => `<article class="glossary-card" data-search="${esc(`${item.term} ${item.definition}`.toLowerCase())}"><h2>${esc(item.term)}</h2><p>${esc(item.definition)}</p></article>`).join("")}</div></section>`;
+    setPage("Glossary", "glossary");
   }
 
   function renderSources() {
-    const cards = Object.values(DATA.sources).map((source) => `<article class="source-card"><div class="source-org">${esc(source.organisation)}</div><h2>${esc(source.title)}</h2><p>${esc(source.note)}</p><a class="btn btn-outline" href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">Open official source <span aria-hidden="true">↗</span></a></article>`).join("");
-    app.innerHTML = `<section class="page-intro"><div class="shell page-intro-grid"><div><div class="eyebrow">Evidence trail</div><h1>Sources, scope and review date.</h1><p>The course uses public primary and authoritative sources and keeps corporate claims separate from general decision practices.</p></div><div class="notice-box"><strong>Educational-content notice.</strong> This experience does not define policy or replace an official Airbus source. Always follow the current internal owner, process and approved documentation.</div></div></section><section><div class="shell sources-grid">${cards}</div></section>`;
-    setDocumentTitle("Sources");
-    setActiveNav("sources");
+    const sources = Object.values(DATA.sources).sort((a,b) => a.organisation.localeCompare(b.organisation) || a.title.localeCompare(b.title));
+    app.innerHTML = `<section class="page-hero compact"><div class="shell"><div class="eyebrow">Evidence base</div><h1>Official and primary learning sources.</h1><p>Twenty-five public references support the course. Links are for learning and review; current controlled Airbus information and approved specialist processes take precedence.</p></div></section><section class="section section-white"><div class="shell sources-grid">${sources.map((source) => `<article class="source-card"><div class="source-org">${esc(source.organisation)}</div><h2>${esc(source.title)}</h2><p>${esc(source.note)}</p><a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">Open official source ↗</a></article>`).join("")}</div></section>`;
+    setPage("Sources", "sources");
   }
 
   function renderNotFound() {
-    app.innerHTML = `<section class="empty-route"><div><div class="eyebrow">Route not found</div><h1>This course page is not on the map.</h1><a class="btn btn-dark" href="#home">Return home</a></div></section>`;
-    setDocumentTitle("Not found");
-    setActiveNav("");
+    app.innerHTML = `<section class="section section-white"><div class="shell empty-state"><div class="eyebrow">Page not found</div><h1>This course route does not exist.</h1><a class="btn btn-dark" href="#home">Return home</a></div></section>`;
+    setPage("Not found", "home");
   }
 
-  function parseRoute() {
-    const route = location.hash.replace(/^#/, "") || "home";
-    const [section, id] = route.split("/");
-    return { section, id };
-  }
-
-  function renderRoute(options = {}) {
-    const oldY = window.scrollY;
-    const { section, id } = parseRoute();
-    if (section === "home") renderHome();
-    else if (section === "course") renderCourse();
-    else if (section === "final-check") renderFinalCheck();
-    else if (section === "glossary") renderGlossary();
-    else if (section === "sources") renderSources();
-    else if (section === "module" && byId[id]) renderModule(byId[id]);
-    else renderNotFound();
-    updateHeaderProgress();
-    if (options.preserveScroll) window.scrollTo(0, oldY);
-    else window.scrollTo(0, 0);
-  }
-
-  function downloadNotes() {
-    const lines = [
-      DATA.meta.title,
-      `${DATA.meta.version} · Reviewed ${DATA.meta.reviewed}`,
-      "",
-      ...DATA.modules.flatMap((module) => [
-        `${module.number} · ${module.title}`,
-        module.reflection,
-        progress.notes[module.id]?.trim() || "No field note saved.",
-        ""
-      ]),
-      "Educational learning notes. They do not replace official Airbus processes or approved documentation."
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+  function download(filename, content, type = "text/plain;charset=utf-8") {
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = "Sustainable_Aviation_Foundations_Field_Notes.txt";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    link.href = url; link.download = filename; link.click();
     URL.revokeObjectURL(url);
   }
 
+  function route() {
+    const hash = (location.hash || "#home").slice(1);
+    const [view, moduleId, rawIndex] = hash.split("/");
+    const module = modulesById[moduleId];
+    if (view === "home" || view === "") renderHome();
+    else if (view === "course") renderCourse();
+    else if (view === "module" && module) renderModule(module);
+    else if (view === "lesson" && module) renderLesson(module, Number(rawIndex));
+    else if (view === "visuals" && module) renderVisuals(module);
+    else if (view === "case" && module) renderCase(module);
+    else if (view === "lab" && module) renderLab(module);
+    else if (view === "assessment" && module) renderAssessment(module);
+    else if (view === "capstone") renderCapstone();
+    else if (view === "final-check") renderFinal();
+    else if (view === "glossary") renderGlossary();
+    else if (view === "sources") renderSources();
+    else renderNotFound();
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  }
+
   document.addEventListener("click", (event) => {
-    const control = event.target.closest("[data-action]");
-    if (!control) return;
-    const action = control.dataset.action;
-
-    if (action === "answer") {
-      const { kind, id } = control.dataset;
-      const index = Number(control.dataset.index);
-      const module = byId[id];
-      if (!module || !Number.isInteger(index)) return;
-      if (kind === "scenario") progress.scenario[id] = index;
-      if (kind === "check") {
-        const question = Number(control.dataset.question);
-        if (!Number.isInteger(question)) return;
-        progress.checks[id] ||= {};
-        progress.checks[id][question] = index;
-      }
-      saveProgress();
-      renderRoute({ preserveScroll: true });
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === "visual-step") {
+      const module = modulesById[button.dataset.module];
+      const visualIndex = Number(button.dataset.visual);
+      const stepIndex = Number(button.dataset.step);
+      const visual = module.explainers[visualIndex];
+      const container = button.closest(".interactive-visual");
+      container.querySelectorAll(".visual-tabs button").forEach((item, idx) => item.classList.toggle("active", idx === stepIndex));
+      container.querySelectorAll(".visual-orbit span").forEach((item, idx) => item.classList.toggle("active", idx === stepIndex));
+      const detail = container.querySelector(".visual-detail");
+      const item = visual.items[stepIndex];
+      detail.innerHTML = `<span>${esc(item.code)}</span><h3>${esc(item.title)}</h3><p>${esc(item.text)}</p><small>${esc(item.detail)}</small>`;
     }
-
-    if (action === "save-note") {
-      const { id } = control.dataset;
-      const textarea = document.querySelector(`[data-note-id="${id}"]`);
-      if (!textarea || !byId[id]) return;
-      progress.notes[id] = textarea.value;
-      saveProgress();
-      showToast("Field note saved in this browser.");
+    if (action === "lab-answer") {
+      const moduleId = button.dataset.module;
+      progress.labAnswers[moduleId] ||= {};
+      progress.labAnswers[moduleId][button.dataset.question] = Number(button.dataset.index);
+      saveProgress(); renderLab(modulesById[moduleId]);
     }
-
-    if (action === "complete") {
-      const { id } = control.dataset;
-      const module = byId[id];
-      if (!module) return;
-      const ready = progress.scenario[id] === module.scenario.correct && module.checks.every((check, index) => progress.checks[id]?.[index] === check.correct);
-      if (!ready) return;
-      if (!progress.completed.includes(id)) progress.completed.push(id);
-      saveProgress();
-      renderRoute({ preserveScroll: true });
-      showToast(`${module.number} completed. Progress saved.`);
+    if (action === "assessment-answer") {
+      const moduleId = button.dataset.module;
+      progress.assessmentAnswers[moduleId] ||= {};
+      progress.assessmentAnswers[moduleId][button.dataset.question] = Number(button.dataset.index);
+      saveProgress(); renderAssessment(modulesById[moduleId]);
     }
-
     if (action === "final-answer") {
-      const question = Number(control.dataset.question);
-      const index = Number(control.dataset.index);
-      if (!Number.isInteger(question) || !Number.isInteger(index) || !DATA.finalAssessment.questions[question]) return;
-      progress.finalAnswers[question] = index;
-      saveProgress();
-      renderRoute({ preserveScroll: true });
+      progress.finalAnswers[button.dataset.question] = Number(button.dataset.index);
+      saveProgress(); renderFinal();
     }
-
-    if (action === "retake-final") {
-      progress.finalAnswers = {};
-      progress.finalPassed = false;
-      saveProgress();
-      renderRoute();
-      showToast("Final check reset.");
+    if (action === "download-tool") {
+      const module = modulesById[button.dataset.module];
+      const rows = [module.tool.headers, ...module.tool.rows];
+      download(module.tool.filename, `\uFEFF${rows.map((row) => row.map(csvEsc).join(",")).join("\n")}`, "text/csv;charset=utf-8");
+      showToast(`${module.tool.title} downloaded.`);
     }
-
-    if (action === "download-notes") downloadNotes();
-
-    if (action === "reset") {
-      if (!window.confirm("Reset all saved progress and field notes for Sustainable Aviation Foundations?")) return;
-      progress = defaultProgress();
-      saveProgress();
-      renderRoute();
-      showToast("Saved progress reset.");
+    if (action === "export-notes") {
+      const lines = [DATA.meta.title, `Exported ${new Date().toISOString()}`, "", ...Object.entries(progress.notes).flatMap(([key, value]) => value ? [`## ${key}`, value, ""] : [])];
+      download("Sustainable_Aviation_Foundations_Field_Notes.txt", lines.join("\n"));
+      showToast("Field notes exported.");
     }
   });
 
-  window.addEventListener("hashchange", () => renderRoute());
-  renderRoute();
+  document.addEventListener("input", (event) => {
+    if (event.target.matches("[data-note]")) {
+      progress.notes[event.target.dataset.note] = event.target.value;
+      saveProgress();
+    }
+    if (event.target.matches('[data-action="filter-glossary"]')) {
+      const query = event.target.value.trim().toLowerCase();
+      document.querySelectorAll(".glossary-card").forEach((card) => { card.hidden = !card.dataset.search.includes(query); });
+    }
+  });
+
+  window.addEventListener("hashchange", route);
+  route();
 })();

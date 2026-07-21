@@ -1,37 +1,26 @@
-# Sustainable Aviation Foundations
+# Sustainable Aviation Foundations · Master course v3.0
 
-Enriched English master for Airbus Defence and Space. This static web course is designed for GitHub Pages and requires no build step or external runtime service.
+Static English learning application for the Sustainable Aviation & Performance community. The course is designed for Airbus Defence and Space learning context and does not replace controlled policies, procedures, legal advice, technical authorisation, targets or corporate positions.
 
-## Learning experience
+## Curriculum
 
-- Audience: Airbus Defence and Space employees, introductory level
-- Expected duration: 60–75 minutes
-- 6 modules
-- 24 developed theory chapters
-- 6 visual explainers
-- 6 applied aerospace examples
-- 6 decision scenarios with option-specific feedback
-- 18 module knowledge questions
-- 12-question final knowledge check
-- 18-term plain-language glossary
-- Private browser-saved field notes with text export
-- 15 public primary or authoritative sources
+- 6 modules and an estimated 7–9 hours of active learning
+- 42 theory lessons
+- 12 interactive visual explainers
+- 6 progressive fictional composite case files
+- 6 applied laboratories
+- 48 module-assessment questions
+- 20-question final applied assessment
+- 6 downloadable CSV work tools
+- 30-term glossary and 25 public primary/official sources
+- More than 35,000 words of structured course content
 
-## Modules
+## Technical design
 
-1. Sustainability as a Decision System
-2. Lifecycle, Circularity & Materials
-3. Digital Innovation & Environmental Evidence
-4. People, Skills & Improvement Culture
-5. Responsible & Resilient Value Chain
-6. Climate, Nature & Biodiversity
+The application is dependency-free and works as a static GitHub Pages site. Progress, answers and non-confidential field notes are stored in the browser with `localStorage`. No learner data are transmitted by the application.
 
-## Publication
+Open `index.html` directly or publish the directory from the repository root with GitHub Pages.
 
-Upload the contents of this folder directly to the repository root. `index.html` must remain in the root. Configure GitHub Pages to deploy from `main` and `/ (root)`.
+## Educational boundaries
 
-## Scope and governance
-
-This is educational and exploratory content for Airbus Defence and Space. It does not replace official policies, processes, targets, technical instructions, legal assessment or corporate positions. Generated visual concepts require approval or replacement with authorised corporate imagery before official publication.
-
-Reviewed: 21 July 2026 · Enriched English master v2.0
+All operational situations are fictional composite learning cases. Learners should not enter confidential, personal, supplier-sensitive or controlled programme information into unapproved environments. Public sources support learning only; current controlled Airbus information and approved specialist processes take precedence.
