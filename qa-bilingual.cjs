@@ -8,9 +8,10 @@ assert.deepEqual(Object.keys(patches).sort(),["m1","m2","m3","m4","m5","m6"]);
 const excluded=new Set(["id","number","colour","image","supportImage","secondaryImage","duration","filename","url","code","correct","sources"]);
 function get(obj,path){return path.reduce((v,k)=>v==null?undefined:v[k],obj)}
 function walk(value,path,missing){
+  if(path.includes("sources")) return;
   if(typeof value==="string"){
     const key=path[path.length-1];
-    if(excluded.has(String(key))) return;
+    if(!value.trim() || excluded.has(String(key))) return;
     const translated=get(patches[path[0]],path.slice(1));
     if(typeof translated!=="string"||!translated.trim()) missing.push(path.join("."));
     return;
