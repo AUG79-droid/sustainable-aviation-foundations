@@ -71,6 +71,8 @@
     "Build evidence, expose trade-offs and connect environmental performance with engineering, operations, people, digital systems, the value chain, climate and nature.": "Construye evidencia, haz visibles las compensaciones y conecta el desempeño ambiental con ingeniería, operaciones, personas, sistemas digitales, cadena de valor, clima y naturaleza.",
     "Resume the course": "Continuar el curso",
     "Start the course": "Empezar el curso",
+    "7–9 hours": "7–9 horas",
+    "A generated learning visual showing an A400M and Eurofighter in a Defence and Space hangar with an engineering team.": "Imagen didáctica generada que muestra un A400M y un Eurofighter en un hangar de Defence and Space con un equipo de ingeniería.",
     "Explore the curriculum": "Explorar el programa",
     "Your learning progress": "Tu progreso de aprendizaje",
     "Complete curriculum": "Programa completo",
@@ -109,6 +111,7 @@
     "Progressive case file": "Caso progresivo",
     "Applied aerospace analysis": "Análisis aeroespacial aplicado",
     "Applied laboratory": "Laboratorio aplicado",
+    "Open applied lab": "Abrir laboratorio aplicado",
     "4 decisions · all correct": "4 decisiones · todas correctas",
     "Module assessment": "Evaluación del módulo",
     "8 questions · 75% pass": "8 preguntas · 75 % para aprobar",
@@ -165,13 +168,16 @@
     "Six correct answers are required.": "Se necesitan seis respuestas correctas.",
     "Review lessons": "Revisar lecciones",
     "Peer review prompt": "Pregunta para revisión entre pares",
+    "Draft a non-confidential response…": "Redacta una respuesta genérica y no confidencial…",
     "Export all field notes ↓": "Exportar todas las notas de campo ↓",
     "Open final assessment": "Abrir evaluación final",
+    "Final applied assessment": "Evaluación final aplicada",
     "Transfer the method across all six modules.": "Transfiere el método a los seis módulos.",
     "The assessment can be reviewed now, but completion also requires all six modules.": "La evaluación puede revisarse ahora, pero para completar el curso también se necesitan los seis módulos.",
     "Course assessment passed.": "Evaluación del curso superada.",
     "Completion is not yet unlocked.": "La finalización todavía no está desbloqueada.",
     "Review course": "Revisar curso",
+    "Capstone": "Actividad final",
     "Reference": "Referencia",
     "Course glossary.": "Glosario del curso.",
     "Thirty terms used across the complete curriculum.": "Treinta términos utilizados en todo el programa.",
@@ -184,6 +190,7 @@
     "Page not found": "Página no encontrada",
     "This course route does not exist.": "Esta ruta del curso no existe.",
     "Return home": "Volver al inicio",
+    "Not found": "No encontrado",
     "Field notes exported.": "Notas de campo exportadas."
   };
 
@@ -191,15 +198,24 @@
     if (lang !== "es" || typeof text !== "string") return text;
     if (ES[text]) return ES[text];
 
+    // Buttons frequently include a decorative arrow in the same text node.
+    // Translate the semantic label while keeping the original direction marker.
+    let decorated;
+    if ((decorated = text.match(/^(←\s*)?(.+?)(\s*→)?$/)) && (decorated[1] || decorated[3])) {
+      const translatedCore = translate(decorated[2]);
+      if (translatedCore !== decorated[2]) return `${decorated[1] || ""}${translatedCore}${decorated[3] || ""}`;
+    }
+
     let m;
     if ((m = text.match(/^(\d+) of 6$/))) return `${m[1]} de 6`;
     if ((m = text.match(/^(\d+)% complete$/))) return `${m[1]} % completado`;
+    if ((m = text.match(/^(\d+)% complete · (.+)$/))) return `${m[1]} % completado · ${translateDuration(m[2])}`;
     if ((m = text.match(/^Complete · (.+)$/))) return `Completado · ${m[1]}`;
     if ((m = text.match(/^(\d+) lessons$/))) return `${m[1]} lecciones`;
     if ((m = text.match(/^(\d+) interactive explainers$/))) return `${m[1]} explicaciones interactivas`;
     if ((m = text.match(/^(\d+) assessed questions$/))) return `${m[1]} preguntas evaluadas`;
     if ((m = text.match(/^(\d+) of 6 modules complete\. Progress, answers and field notes stay in this browser\.$/))) return `${m[1]} de 6 módulos completados. El progreso, las respuestas y las notas de campo permanecen en este navegador.`;
-    if ((m = text.match(/^(.+) · (\d+) lessons · (\d+)% complete$/))) return `${m[1]} · ${m[2]} lecciones · ${m[3]} % completado`;
+    if ((m = text.match(/^(.+) · (\d+) lessons · (\d+)% complete$/))) return `${translateDuration(m[1])} · ${m[2]} lecciones · ${m[3]} % completado`;
     if ((m = text.match(/^Lesson (\d+)$/))) return `Lección ${m[1]}`;
     if ((m = text.match(/^Lesson (\d+) of (\d+) · (.+)$/))) return `Lección ${m[1]} de ${m[2]} · ${m[3]}`;
     if ((m = text.match(/^(.+) overview$/))) return `Resumen de ${m[1]}`;
@@ -212,11 +228,16 @@
     if ((m = text.match(/^Open (M\d+)$/))) return `Abrir ${m[1]}`;
     if ((m = text.match(/^(\d+)\/(\d+) answered$/))) return `${m[1]}/${m[2]} respondidas`;
     if ((m = text.match(/^Current modules complete: (\d+)\/6\.$/))) return `Módulos completados actualmente: ${m[1]}/6.`;
+    if ((m = text.match(/^The assessment can be reviewed now, but completion also requires all six modules\. Current modules complete: (\d+)\/6\.$/))) return `La evaluación puede revisarse ahora, pero para completar el curso también se necesitan los seis módulos. Módulos completados actualmente: ${m[1]}/6.`;
     if ((m = text.match(/^(M\d+|Cross-course) · Question (\d+) of (\d+)$/))) return `${m[1] === "Cross-course" ? "Todo el curso" : m[1]} · Pregunta ${m[2]} de ${m[3]}`;
     if ((m = text.match(/^You scored (\d+)\/20 and completed all six modules\.$/))) return `Has obtenido ${m[1]}/20 y completado los seis módulos.`;
     if ((m = text.match(/^Score: (\d+)\/20\. You need at least 16 correct answers and all six modules complete\.$/))) return `Puntuación: ${m[1]}/20. Necesitas al menos 16 respuestas correctas y completar los seis módulos.`;
     if ((m = text.match(/^(.+) downloaded\.$/))) return `${m[1]} descargada.`;
     return text;
+  }
+
+  function translateDuration(text) {
+    return text.replace(/\bhours?\b/gi, (value) => value.toLowerCase() === "hour" ? "hora" : "horas");
   }
 
   function localize(root = document) {
@@ -235,8 +256,8 @@
       const next = translate(trimmed);
       if (next !== trimmed) node.nodeValue = raw.replace(trimmed, next);
     });
-    root.querySelectorAll?.("[aria-label], [placeholder], [title]").forEach((el) => {
-      ["aria-label", "placeholder", "title"].forEach((attr) => {
+    root.querySelectorAll?.("[aria-label], [placeholder], [title], [alt]").forEach((el) => {
+      ["aria-label", "placeholder", "title", "alt"].forEach((attr) => {
         const value = el.getAttribute(attr);
         if (value) el.setAttribute(attr, translate(value));
       });

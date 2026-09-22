@@ -35,4 +35,16 @@ const app=fs.readFileSync("app.js","utf8");
 assert.match(app,/FOUNDATIONS_ACTIVE_DATA/);
 const i18n=fs.readFileSync("i18n.js","utf8");
 assert.match(i18n,/hubLang/);assert.match(i18n,/FOUNDATIONS_SET_LANG/);
+[
+  "7–9 hours",
+  "A generated learning visual showing an A400M and Eurofighter",
+  "Draft a non-confidential response…",
+  "Open applied lab",
+  "Final applied assessment",
+  "Capstone",
+  "Not found"
+].forEach(label=>assert.ok(i18n.includes(`\"${label}`),`missing Spanish UI translation for ${label}`));
+assert.match(i18n,/decorative arrow/);
+assert.match(i18n,/complete ·/);
+assert.match(i18n,/\[alt\]/);
 console.log("Bilingual QA passed: 6 translated modules, final assessment, glossary, sources, capstone and learning guide.");
