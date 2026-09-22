@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  const DATA = window.FOUNDATIONS_ACTIVE_DATA || window.FOUNDATIONS_DATA;\n  const T = window.FOUNDATIONS_TRANSLATE || ((text) => text);
+  const DATA = window.FOUNDATIONS_ACTIVE_DATA || window.FOUNDATIONS_DATA;
+  const T = window.FOUNDATIONS_TRANSLATE || ((text) => text);
   const STORE_KEY = "sustainable-aviation-foundations-v3";
   const app = document.querySelector("#app");
   const toast = document.querySelector("#toast");
