@@ -28,6 +28,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Validate bilingual source
+        shell: bash
+        run: |
+          set -e
+          node --check app.js
+          node --check i18n.js
+          for f in translations-es-m1.js translations-es-m2.js translations-es-m3.js translations-es-m4.js translations-es-m5.js translations-es-m6.js translations-es-global.js; do node --check "$f"; done
+          node qa-bilingual.cjs
       - name: Prepare site
         shell: bash
         run: |

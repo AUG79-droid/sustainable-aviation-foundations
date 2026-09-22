@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const DATA = window.FOUNDATIONS_DATA;
+  const DATA = window.FOUNDATIONS_ACTIVE_DATA || window.FOUNDATIONS_DATA;\n  const T = window.FOUNDATIONS_TRANSLATE || ((text) => text);
   const STORE_KEY = "sustainable-aviation-foundations-v3";
   const app = document.querySelector("#app");
   const toast = document.querySelector("#toast");
@@ -36,7 +36,7 @@
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(progress));
     } catch (_error) {
-      showToast("Progress could not be saved in this browser.");
+      showToast(T("Progress could not be saved in this browser."));
     }
     updateHeaderProgress();
   }
@@ -53,7 +53,7 @@
   }
 
   function showToast(message) {
-    toast.textContent = message;
+    toast.textContent = T(message);
     toast.classList.add("show");
     clearTimeout(showToast.timer);
     showToast.timer = setTimeout(() => toast.classList.remove("show"), 3000);
@@ -105,12 +105,12 @@
     const label = document.querySelector("#header-progress-label");
     const ring = document.querySelector(".progress-ring");
     if (value) value.textContent = percent;
-    if (label) label.textContent = `${progress.completed.length} of 6`;
+    if (label) label.textContent = T(`${progress.completed.length} of 6`);
     if (ring) ring.style.background = `conic-gradient(var(--teal) ${percent}%, rgba(255,255,255,.15) ${percent}% 100%)`;
   }
 
   function setPage(title, nav = "course") {
-    document.title = title ? `${title} · ${DATA.meta.title}` : DATA.meta.title;
+    document.title = title ? `${T(title)} · ${DATA.meta.title}` : DATA.meta.title;
     document.querySelectorAll("[data-nav]").forEach((link) => {
       const active = link.dataset.nav === nav;
       link.classList.toggle("active", active);
@@ -118,6 +118,7 @@
       else link.removeAttribute("aria-current");
     });
     updateHeaderProgress();
+    window.FOUNDATIONS_LOCALIZE?.(document);
   }
 
   function firstNextRoute() {
@@ -434,12 +435,12 @@
       const module = modulesById[button.dataset.module];
       const rows = [module.tool.headers, ...module.tool.rows];
       download(module.tool.filename, `\uFEFF${rows.map((row) => row.map(csvEsc).join(",")).join("\n")}`, "text/csv;charset=utf-8");
-      showToast(`${module.tool.title} downloaded.`);
+      showToast(T(`${module.tool.title} downloaded.`));
     }
     if (action === "export-notes") {
       const lines = [DATA.meta.title, `Exported ${new Date().toISOString()}`, "", ...Object.entries(progress.notes).flatMap(([key, value]) => value ? [`## ${key}`, value, ""] : [])];
-      download("Sustainable_Aviation_Foundations_Field_Notes.txt", lines.join("\n"));
-      showToast("Field notes exported.");
+      download(window.FOUNDATIONS_LANG === "es" ? "Fundamentos_Aviacion_Sostenible_Notas_Campo.txt" : "Sustainable_Aviation_Foundations_Field_Notes.txt", lines.join("\n"));
+      showToast(T("Field notes exported."));
     }
   });
 
