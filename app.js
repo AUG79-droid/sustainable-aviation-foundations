@@ -201,7 +201,7 @@
             <div class="journey-number">${String(index + 1).padStart(2, "0")}</div>
             <div class="journey-image"><img src="${esc(module.image)}" alt="${esc(module.alt)}"></div>
             <div class="journey-copy"><div class="card-kicker">${esc(module.duration)} · ${module.lessons.length} lessons · ${task.percent}% complete</div><h2>${esc(module.title)}</h2><p>${esc(module.promise)}</p>
-              <div class="journey-pills"><span>2 visual explainers</span><span>1 case file</span><span>1 applied lab</span><span>8-question assessment</span><span>Downloadable tool</span></div>
+              <div class="journey-pills"><span>2 visual explainers</span><span>1 case file</span><span>1 applied lab</span><span>8-question assessment</span></div>
               <div class="thin-progress"><span style="width:${task.percent}%"></span></div><a class="btn btn-outline" href="#module/${esc(module.id)}">Open module →</a>
             </div>
           </article>`;
@@ -232,7 +232,6 @@
           <article class="briefing-card"><div class="eyebrow">Module briefing</div><h2>${esc(module.briefing.title)}</h2>${module.briefing.paragraphs.map((text) => `<p>${esc(text)}</p>`).join("")}</article>
           <article class="objective-panel"><div><div class="eyebrow">Learning objectives</div><h2>By the end of this module, you can:</h2></div><div class="objective-list large">${module.objectives.map((objective) => `<span>${esc(objective)}</span>`).join("")}</div></article>
           <article class="misconception-panel"><div class="eyebrow amber">Common traps</div><h2>Three ideas to challenge before you begin.</h2><div class="myth-grid">${module.misconceptions.map((item) => `<div><strong>“${esc(item.myth)}”</strong><p>${esc(item.correction)}</p></div>`).join("")}</div></article>
-          <article class="tool-panel"><div><div class="eyebrow light">Module work tool</div><h2>${esc(module.tool.title)}</h2><p>${esc(module.tool.description)}</p></div><button class="btn btn-light" type="button" data-action="download-tool" data-module="${esc(module.id)}">Download CSV template ↓</button></article>
         </div>
         <aside class="module-roadmap"><div class="roadmap-sticky"><div class="roadmap-head"><span>${task.done}/${task.total}</span><div><strong>Module roadmap</strong><small>Complete every item</small></div></div>${moduleChecklist(module)}<a class="btn btn-dark full" href="#lesson/${esc(module.id)}/${startIdx >= 0 ? startIdx : 0}">${task.done ? "Continue module" : "Start lesson 1"} →</a></div></aside>
       </div></section>`;
