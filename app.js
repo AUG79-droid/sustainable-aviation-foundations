@@ -179,7 +179,7 @@
         <div class="metric-grid">
           <div><strong>${arch.lessons}</strong><span>theory lessons</span></div><div><strong>${arch.interactiveExplainers}</strong><span>visual explainers</span></div>
           <div><strong>${arch.caseFiles}</strong><span>progressive cases</span></div><div><strong>${arch.appliedLabs}</strong><span>applied labs</span></div>
-          <div><strong>${arch.downloadableTools}</strong><span>work templates</span></div><div><strong>${arch.finalQuestions}</strong><span>final questions</span></div>
+          <div><strong>${arch.finalQuestions}</strong><span>final questions</span></div>
         </div>
       </div></section>
       <section class="section section-soft"><div class="shell learning-guide">
