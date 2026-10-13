@@ -6,6 +6,8 @@ window.FOUNDATIONS_ES_PATCHES.m3 = {
   alt: "Una persona especialista utiliza observación de la Tierra y datos industriales en un entorno de control de misión de Defence and Space.",
   supportAlt: "Ingenieros utilizan conjuntamente modelos digitales y componentes físicos en un taller aeroespacial.",
   secondaryAlt: "Una persona especialista utiliza observación de la Tierra y datos industriales en un entorno de control de misión de Defence and Space.",
+  theoryAlt: "Las mediciones de una tarea de mantenimiento de un A400M pasan por análisis de datos documentado, un modelo digital, revisión humana y retroalimentación operativa.",
+  theoryCaption: "Una recomendación digital fiable conserva la cadena desde la señal física hasta el modelo, el juicio humano, la actuación y el resultado medido.",
   promise: "Evaluar la procedencia de los datos, la adecuación de los modelos, la supervisión de la Inteligencia Artificial y la huella ambiental de las decisiones digitales.",
   coreQuestion: "¿Cuándo mejora un resultado digital una decisión de sostenibilidad y cuándo genera falsa confianza?",
   objectives: [

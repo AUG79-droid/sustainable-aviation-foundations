@@ -44,6 +44,13 @@
   }
 
   const ES = {
+    "Theory map": "Mapa teórico",
+    "Applied context": "Contexto aplicado",
+    "System context": "Contexto del sistema",
+    "Theory in practice": "Teoría en la práctica",
+    "Technical, operational and environmental evidence must be reviewed together.": "Las evidencias técnicas, operativas y ambientales deben revisarse conjuntamente.",
+    "Use the image to connect the concept to the wider defence-aerospace system, not as evidence of an environmental result.": "Utiliza la imagen para relacionar el concepto con el sistema más amplio de defensa y aeronáutica, no como evidencia de un resultado ambiental.",
+    "The scene illustrates where evidence, technical constraints and human judgement meet in practice.": "La escena ilustra dónde confluyen en la práctica las evidencias, las restricciones técnicas y el juicio humano.",
     "Skip to content": "Saltar al contenido",
     "Sustainable Aviation": "Aviación Sostenible",
     "Foundations": "Fundamentos",

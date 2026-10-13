@@ -6,6 +6,8 @@ window.FOUNDATIONS_ES_PATCHES.m1 = {
   alt: "Un equipo de Defence and Space compara información operativa, energética, de suministro y ambiental en una sala de decisión.",
   supportAlt: "Un equipo multidisciplinar revisa varias capas de datos en un gran panel de decisión.",
   secondaryAlt: "Un equipo de Defence and Space compara información operativa, energética, de suministro y ambiental en una sala de decisión.",
+  theoryAlt: "Un equipo multidisciplinar relaciona necesidad operativa, materiales, logística, evidencias e incertidumbre en una decisión sobre un sistema de misión de un A400M.",
+  theoryCaption: "La mejora aparente forma parte de un sistema más amplio: la finalidad, los efectos transferidos, la incertidumbre y el seguimiento deben permanecer visibles.",
   promise: "Construir el patrón de razonamiento utilizado en todo el curso: línea de base, límite, evidencia, compensación, responsable y seguimiento.",
   coreQuestion: "¿Cómo sabemos que una mejora es real y no un problema desplazado a otra parte?",
   objectives: [

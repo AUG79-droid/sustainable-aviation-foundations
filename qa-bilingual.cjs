@@ -5,7 +5,7 @@ for(const file of files) vm.runInContext(fs.readFileSync(file,"utf8"),ctx,{filen
 const data=ctx.window.FOUNDATIONS_DATA,patches=ctx.window.FOUNDATIONS_ES_PATCHES,globalPatch=ctx.window.FOUNDATIONS_ES_GLOBAL;
 assert.equal(data.modules.length,6);
 assert.deepEqual(Object.keys(patches).sort(),["m1","m2","m3","m4","m5","m6"]);
-const excluded=new Set(["id","number","colour","image","supportImage","secondaryImage","duration","filename","url","code","correct","sources"]);
+const excluded=new Set(["id","number","colour","image","supportImage","secondaryImage","theoryImage","duration","filename","url","code","correct","sources"]);
 function get(obj,path){return path.reduce((v,k)=>v==null?undefined:v[k],obj)}
 function walk(value,path,missing){
   if(path.includes("sources")) return;

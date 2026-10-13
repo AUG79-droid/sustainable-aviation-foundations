@@ -971,14 +971,52 @@
     module.misconceptions = misconceptions[module.id];
   });
   const secondaryImages = {
-    m4: ["assets/m4-field-learning.jpg", "A mixed team takes part in a practical outdoor learning activity beside an industrial workplace."],
+    m4: ["assets/theory-m4-people-learning.jpg", "A mixed defence-aerospace team observes a controlled maintenance task and records evidence together."],
     m5: ["assets/m5-evidence-review.jpg", "A cross-functional team reviews environmental evidence and documentation in a professional meeting."],
     m6: ["assets/m6-landscape-assessment.jpg", "A technical team examines landscape and location data on large digital displays."]
+  };
+  const theoryImages = {
+    m1: {
+      src: "assets/theory-m1-systems.jpg",
+      alt: "A cross-functional team connects operational need, materials, logistics, evidence and uncertainty around an A400M mission-system decision.",
+      caption: "The apparent improvement sits inside a wider system: purpose, transferred effects, uncertainty and follow-up must remain visible.",
+    },
+    m2: {
+      src: "assets/theory-m2-lifecycle.jpg",
+      alt: "The same military-aircraft access panel moves through material preparation, manufacture, inspection, authorised repair, disassembly and recovery.",
+      caption: "Lifecycle thinking follows one technical function through manufacture, service, repair and recovery instead of judging a material in isolation.",
+    },
+    m3: {
+      src: "assets/theory-m3-digital-evidence.jpg",
+      alt: "Measurements from an A400M maintenance task pass through documented data analysis, a digital model, human review and operational feedback.",
+      caption: "A trustworthy digital recommendation preserves the chain from physical signal to model, human judgement, action and measured outcome.",
+    },
+    m4: {
+      src: "assets/theory-m4-people-learning.jpg",
+      alt: "A diverse defence-aerospace team observes a maintenance demonstration, checks technical guardrails and records learning.",
+      caption: "Participation becomes useful when practical knowledge, technical guardrails, observed evidence and learning are brought into the same controlled trial.",
+    },
+    m5: {
+      src: "assets/theory-m5-value-chain.jpg",
+      alt: "A cross-functional team traces an aerospace component through supplier tiers, material evidence, transport routes and an unresolved lower-tier dependency.",
+      caption: "Responsible sourcing requires evidence beyond the direct supplier: material identity, lower-tier visibility, alternative routes and unresolved dependencies all affect the decision.",
+    },
+    m6: {
+      src: "assets/theory-m6-climate-nature.jpg",
+      alt: "A technical team assesses flood, drainage, heat, noise, lighting and habitat pathways around an operational military airbase with an A400M.",
+      caption: "Location changes the evidence: operational resilience, water pathways, climate exposure and ecological pressures must be assessed together without turning one result into a broad environmental claim.",
+    }
   };
   DATA.modules.forEach((module) => {
     const secondary = secondaryImages[module.id] || [module.image, module.alt];
     module.secondaryImage = secondary[0];
     module.secondaryAlt = secondary[1];
+    const theory = theoryImages[module.id];
+    if (theory) {
+      module.theoryImage = theory.src;
+      module.theoryAlt = theory.alt;
+      module.theoryCaption = theory.caption;
+    }
   });
   DATA.capstone = {
     title: "Capstone: build one defensible sustainability decision",

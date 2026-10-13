@@ -253,15 +253,38 @@
     syncModuleCompletion(module);
     saveProgress();
     const deep = lesson.deepDive || { title: "Go deeper", paragraphs: [] };
-    const figureImage = index === 1 ? module.supportImage : module.secondaryImage;
-    const figureAlt = index === 1 ? module.supportAlt : module.secondaryAlt;
+    const lessonVisual = index === 0 ? {
+      image: module.theoryImage,
+      alt: module.theoryAlt,
+      caption: module.theoryCaption,
+      label: T("Theory map"),
+      kind: "theory"
+    } : index === 1 ? {
+      image: module.supportImage,
+      alt: module.supportAlt,
+      caption: T("Technical, operational and environmental evidence must be reviewed together."),
+      label: T("Applied context"),
+      kind: "context"
+    } : index === 3 ? {
+      image: module.image,
+      alt: module.alt,
+      caption: T("Use the image to connect the concept to the wider defence-aerospace system, not as evidence of an environmental result."),
+      label: T("System context"),
+      kind: "context"
+    } : index === 5 ? {
+      image: module.secondaryImage,
+      alt: module.secondaryAlt,
+      caption: T("The scene illustrates where evidence, technical constraints and human judgement meet in practice."),
+      label: T("Theory in practice"),
+      kind: "context"
+    } : null;
     app.innerHTML = `
       <section class="lesson-header" style="--module:${esc(module.colour)}"><div class="shell"><div class="crumbs"><a href="#course">Course</a><span>/</span><a href="#module/${esc(module.id)}">${esc(module.number)}</a><span>/</span><span>Lesson ${index + 1}</span></div><div class="lesson-progress-label">Lesson ${index + 1} of ${module.lessons.length} · ${esc(lesson.duration)}</div><h1>${esc(lesson.title)}</h1><div class="lesson-track"><span style="width:${Math.round(((index + 1) / module.lessons.length) * 100)}%"></span></div></div></section>
       <section class="lesson-layout shell">
         <aside class="lesson-side"><div class="lesson-side-sticky"><div class="eyebrow">In this module</div>${module.lessons.map((item, idx) => `<a href="#lesson/${esc(module.id)}/${idx}" class="${idx === index ? "active" : ""} ${visitedLessons(module).has(item.id) ? "visited" : ""}"><span>${visitedLessons(module).has(item.id) ? "✓" : idx + 1}</span>${esc(item.title)}</a>`).join("")}<a href="#module/${esc(module.id)}" class="back-link">← Module roadmap</a></div></aside>
         <article class="lesson-content">
           <div class="lesson-opening"><div class="lesson-label">${esc(lesson.label)}</div><h2>${esc(lesson.title)}</h2>${lesson.paragraphs.map((text) => `<p>${esc(text)}</p>`).join("")}</div>
-          ${index === 1 || index === 5 ? `<figure class="lesson-figure"><img src="${esc(figureImage)}" alt="${esc(figureAlt)}"><figcaption>Visual context · Technical, operational and environmental evidence must be reviewed together.</figcaption></figure>` : ""}
+          ${lessonVisual?.image ? `<figure class="lesson-figure ${esc(lessonVisual.kind)}"><div class="lesson-figure-label">${esc(lessonVisual.label)}</div><img src="${esc(lessonVisual.image)}" alt="${esc(lessonVisual.alt)}" loading="lazy" decoding="async"><figcaption><strong>${esc(lessonVisual.label)}</strong><span>${esc(lessonVisual.caption)}</span></figcaption></figure>` : ""}
           <section class="deep-dive"><div class="eyebrow">Deep dive</div><h2>${esc(deep.title)}</h2>${(deep.paragraphs || []).map((text) => `<p>${esc(text)}</p>`).join("")}</section>
           <section class="key-points"><div class="eyebrow">Decision essentials</div><div class="point-grid">${lesson.points.map((point) => `<div><span>✓</span><p>${esc(point)}</p></div>`).join("")}</div></section>
           <section class="worked-example"><div class="eyebrow light">Worked example</div><h2>Translate the concept into an aerospace decision.</h2><p>${esc(lesson.workedExample || "Use the concept on a non-confidential decision from your area and identify what evidence would change the preferred option.")}</p></section>

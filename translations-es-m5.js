@@ -6,6 +6,8 @@ window.FOUNDATIONS_ES_PATCHES.m5 = {
   alt: "Un equipo aeroespacial conecta información de materiales, componentes, proveedores y logística.",
   supportAlt: "Un equipo multifuncional revisa un componente, un mapa logístico y evidencia ambiental junto a una estructura de aeronave.",
   secondaryAlt: "Un equipo multifuncional revisa evidencia ambiental y documentación en una reunión profesional.",
+  theoryAlt: "Un equipo multidisciplinar rastrea un componente aeronáutico a través de niveles de proveedores, evidencias de materiales, rutas de transporte y una dependencia no resuelta de niveles inferiores.",
+  theoryCaption: "El aprovisionamiento responsable exige evidencias más allá del proveedor directo: la identidad del material, la visibilidad de niveles inferiores, las rutas alternativas y las dependencias no resueltas condicionan la decisión.",
   promise: "Comprender diligencia debida, evidencia de proveedores, trazabilidad de sustancias reguladas y la diferencia entre eficiencia y resiliencia.",
   coreQuestion: "¿Cómo puede un programa gestionar impactos y continuidad cuando evidencia crítica se encuentra más allá del límite directo del emplazamiento?",
   objectives: [

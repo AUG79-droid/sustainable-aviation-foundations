@@ -6,6 +6,8 @@ window.FOUNDATIONS_ES_PATCHES.m2 = {
   alt: "Ingenieros aeroespaciales inspeccionan una estructura ligera, materiales avanzados y datos de fabricación.",
   supportAlt: "Un equipo aeroespacial multidisciplinar compara componentes, muestras de materiales y evidencias.",
   secondaryAlt: "Ingenieros aeroespaciales inspeccionan una estructura ligera, materiales avanzados y datos de fabricación.",
+  theoryAlt: "El mismo panel de acceso de una aeronave militar recorre la preparación del material, la fabricación, la inspección, la reparación autorizada, el desmontaje y la recuperación.",
+  theoryCaption: "El pensamiento de ciclo de vida sigue una misma función técnica durante fabricación, servicio, reparación y recuperación, en lugar de juzgar un material de forma aislada.",
   promise: "Comprender el pensamiento de ciclo de vida, el Análisis de Ciclo de Vida, la jerarquía de valor circular y el papel de la trazabilidad técnica.",
   coreQuestion: "¿Cómo puede la industria aeroespacial conservar más valor de productos y materiales sin comprometer seguridad ni cumplimiento?",
   objectives: [

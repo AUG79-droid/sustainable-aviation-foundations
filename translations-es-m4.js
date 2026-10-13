@@ -5,7 +5,9 @@ window.FOUNDATIONS_ES_PATCHES.m4 = {
   strapline: "Convierte la sensibilización en capacidad para detectar, cuestionar, probar y aprender.",
   alt: "Un equipo aeroespacial diverso debate componentes, información de procesos y oportunidades de mejora.",
   supportAlt: "Un equipo multidisciplinar mantiene una conversación práctica sobre sostenibilidad en un entorno aeroespacial.",
-  secondaryAlt: "Un equipo diverso participa en una actividad práctica de aprendizaje al aire libre junto a un entorno industrial.",
+  secondaryAlt: "Un equipo mixto de defensa y aeronáutica observa una tarea controlada de mantenimiento y registra conjuntamente las evidencias.",
+  theoryAlt: "Un equipo diverso de defensa y aeronáutica observa una demostración de mantenimiento, comprueba límites técnicos y registra lo aprendido.",
+  theoryCaption: "La participación resulta útil cuando el conocimiento práctico, los límites técnicos, las evidencias observadas y el aprendizaje se integran en un mismo ensayo controlado.",
   promise: "Aprender por qué la competencia específica de cada rol, la seguridad psicológica, la responsabilidad clara y los experimentos estructurados determinan si un cambio perdura.",
   coreQuestion: "¿Qué permite a las personas convertir conocimiento de sostenibilidad en una mejora segura y creíble?",
   objectives: [

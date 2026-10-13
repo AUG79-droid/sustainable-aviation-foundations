@@ -202,9 +202,12 @@ p { margin-bottom: 1.15em; }
 .lesson-label { margin-bottom: 14px; color: var(--blue); font-size: .76rem; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
 .lesson-opening h2, .deep-dive h2 { font-size: clamp(2rem, 3.5vw, 3.2rem); }
 .lesson-opening p, .deep-dive p { color: #334d5c; font-size: 1.05rem; line-height: 1.78; }
-.lesson-figure { margin: 45px 0; overflow: hidden; border-radius: var(--radius); background: var(--ink); }
-.lesson-figure img { width: 100%; aspect-ratio: 16/8.5; object-fit: cover; }
-.lesson-figure figcaption { padding: 14px 18px; color: #c8d7df; font-size: .78rem; }
+.lesson-figure { position: relative; margin: 45px 0; overflow: hidden; border-radius: var(--radius); background: var(--ink); box-shadow: 0 20px 46px rgba(7,26,43,.16); }
+.lesson-figure img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+.lesson-figure-label { position: absolute; z-index: 2; top: 16px; left: 16px; padding: 8px 11px; border: 1px solid rgba(255,255,255,.38); border-radius: 999px; color: #fff; background: rgba(7,26,43,.82); font-size: .68rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; backdrop-filter: blur(8px); }
+.lesson-figure figcaption { display: grid; grid-template-columns: 130px 1fr; gap: 18px; align-items: start; padding: 17px 20px 19px; color: #d7e3e8; font-size: .84rem; line-height: 1.55; }
+.lesson-figure figcaption strong { color: #68d8cf; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.lesson-figure.theory { background: linear-gradient(135deg,#071a2b,#123c4a); }
 .deep-dive { margin: 48px 0; padding: 38px; border: 1px solid #c8dfe4; border-radius: var(--radius); background: #f1fbfa; }
 .key-points { margin: 42px 0; }
 .point-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -342,6 +345,7 @@ textarea:focus, input:focus { outline: 3px solid rgba(18,102,241,.2); border-col
   .roadmap-sticky { position: static; }
   .lesson-layout { grid-template-columns: 1fr; }
   .lesson-side { display: none; }
+  .lesson-figure figcaption { grid-template-columns: 1fr; gap: 6px; }
   .interactive-visual { grid-template-columns: 1fr; }
   .visual-stage { min-height: 520px; }
   .glossary-grid, .sources-grid { grid-template-columns: repeat(2,1fr); }
