@@ -1003,7 +1003,7 @@
     },
     m6: {
       src: "assets/theory-m6-climate-nature.jpg",
-      alt: "A technical team assesses flood, drainage, heat, noise, lighting and habitat pathways around an operational military airbase with an A400M.",
+      alt: "A technical team assesses flood, drainage, heat, noise, lighting and habitat pathways around a military installation with no aircraft present.",
       caption: "Location changes the evidence: operational resilience, water pathways, climate exposure and ecological pressures must be assessed together without turning one result into a broad environmental claim.",
     }
   };

@@ -6,7 +6,7 @@ window.FOUNDATIONS_ES_PATCHES.m6 = {
   alt: "Un paisaje industrial aeroespacial mostrado junto a humedales, canales de agua y corredores arbolados.",
   supportAlt: "Una instalación industrial junto a un humedal restaurado y un corredor fluvial.",
   secondaryAlt: "Un equipo técnico examina datos de paisaje y ubicación en grandes pantallas digitales.",
-  theoryAlt: "Un equipo técnico evalúa inundación, drenaje, calor, ruido, iluminación y vías ecológicas alrededor de una base aérea militar operativa con un A400M.",
+  theoryAlt: "Un equipo técnico evalúa inundación, drenaje, calor, ruido, iluminación y vías ecológicas alrededor de una instalación militar sin ninguna aeronave.",
   theoryCaption: "La ubicación cambia las evidencias: la resiliencia operativa, las vías del agua, la exposición climática y las presiones ecológicas deben evaluarse conjuntamente sin convertir un resultado en una afirmación ambiental general.",
   promise: "Conectar mitigación climática, adaptación, dependencias de la naturaleza, impactos sobre biodiversidad, ubicación y jerarquía de mitigación.",
   coreQuestion: "¿Cómo pueden las decisiones industriales tener en cuenta tanto el cambio climático como los sistemas vivos de los que dependen las operaciones?",

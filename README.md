@@ -7,6 +7,7 @@ Static English learning application for the Sustainable Aviation & Performance c
 - 6 modules and an estimated 7–9 hours of active learning
 - 42 theory lessons
 - Six original bilingual theory illustrations plus contextual technical imagery embedded through the lesson reading flow
+- Hard visual rule: vegetation and aircraft never appear in the same image. Nature visuals contain no aircraft; aircraft visuals use only A400M or Eurofighter in technical or industrial settings with no visible vegetation.
 - 12 interactive visual explainers
 - 6 progressive fictional composite case files
 - 6 applied laboratories
